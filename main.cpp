@@ -1,45 +1,344 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <fstream> // i used it for file handling
+#include <sstream> // i used it for stringstreem it's okay if you don't know about it I will explain later or you can search it in google
 #include <windows.h> // i used it for Sleep() and system("cls") function
 using namespace std;
 
-bool login() {
-    string user, pass;
-    int attempts = 3;
-    while (attempts--) {
-        system("cls"); // Clears Screen of the terminal
+const string MASTER_KEY = "ADMIN@1234";
+
+void loader(string msg) {
+    cout << msg;
+    for(int i = 0; i < 3; i++) {
+        cout << ".";
+        Sleep(600); // Pause for 600 milliseconds
+    }
+    cout << endl;
+}
+
+void pauseWithMessage(string msg) {
+    cout << endl; 
+    cout << msg;
+    cin.ignore();
+    getchar(); // for enter 
+}
+
+void validChoice(int &choice) { // 'f'
+    if (choice > 0) {
+        return;
+    } else {
+        cout << "Please Enter a Valid Number" << endl;
+        cin.clear(); // to remove
+        cin.ignore(); // \n
+        choice = 100;
+    }
+}
+
+class User {
+    string name, username, password;
+    bool isLocked;
+    int attempts;
+public:
+    User() {
+        isLocked = false;
+        attempts = 3;
+    }
+    void setName(string n) {
+        name = n;
+    }
+    void setUsername(string u) { 
+        username = u;
+    }
+    void setPassword(string p) { 
+        password = p;
+    }
+    void setIsLocked(bool locked) { 
+        isLocked = locked;
+    }
+    void setAttempts(int a) {
+        attempts = a;
+    }
+    string getName() {
+        return name;
+    }
+    string getUsername() { 
+        return username;
+    }
+    string getPassword() { 
+        return password;
+    }
+    bool getIsLocked() { 
+        return isLocked;
+    }
+    int getAttempts() {
+        return attempts;
+    }
+    void decrementAttempts() {
+        attempts--;
+    }
+
+    // Reset attempts (after successful login or unlocking we are going to reset it)
+    void resetAttempts() {
+        attempts = 3;
+    }
+
+    // Unlock account
+    void unlockAccount() {
+        isLocked = false;
+        resetAttempts(); // To Reset attempts when we unlock
+    }
+
+    void saveUsersToFile(string filename, vector<User> &users) {
+        ofstream file(filename); // write
+        for (User &user : users) {
+            file << user.getName() << "|" << user.getUsername() << "|" << user.getPassword() << "|" 
+                 << (user.getIsLocked() ? "1" : "0") << "|" << user.getAttempts() << "\n";
+        }
+    }
+
+    // Admin Functions
+    bool resetPassword(vector<User> &users, string masterKey) {
+        if (masterKey != MASTER_KEY) {
+            cout << "Invalid master key!" << endl;
+            return false;
+        }
+
+        string targetUsername, newPassword;
+        cout << "Enter the username of the account to reset: ";
+        getline(cin, targetUsername);
+        cout << "Enter the new password: ";
+        getline(cin, newPassword);
+
+        for (User &user : users) {
+            if (user.getUsername() == targetUsername) {
+                user.setPassword(newPassword);
+                loader("Please Wait");
+                saveUsersToFile("users.csv", users);
+                cout << "Password reset successful!" << endl;
+                return true;
+            }
+        }
+
+        cout << "Username not found!" << endl;
+        return false;
+    }
+
+    void unlockUserAccount(vector<User> &users, string masterKey) {
+        if (masterKey != MASTER_KEY) {
+            cout << "Invalid master key!" << endl;
+            return;
+        }
+
+        string targetUsername;
+        cout << "Enter the username of the account to unlock: ";
+        getline(cin, targetUsername);
+
+        for (User &user : users) {
+            if (user.getUsername() == targetUsername) {
+                if (user.getAttempts() > 0) {
+                    cout << "Account is already active and not locked. No action needed." << endl;
+                    return;
+                }
+                user.unlockAccount();
+                loader("Unlocking");
+                saveUsersToFile("users.csv", users);
+                cout << "Account unlocked successfully!" << endl;
+                return;
+            }
+        }
+
+        cout << "Username not found!" << endl;
+    }
+
+    void removeUserAccount(vector<User> &users, string masterKey) {
+        if (masterKey != MASTER_KEY) {
+            cout << "Invalid master key!" << endl;
+            return;
+        }
+
+        string targetUsername;
+        cout << "Enter the username of the account to remove: ";
+        getline(cin, targetUsername);
+
+        for (auto it = users.begin(); it != users.end(); ++it) {
+            if (it->getUsername() == targetUsername) {
+                users.erase(it);
+                loader("Removing");
+                saveUsersToFile("users.csv", users);
+                cout << "Account removed successfully!" << endl;
+                return;
+            }
+        }
+
+        cout << "Username not found!" << endl;
+    }
+
+};
+
+vector<User> loadUsersFromFile(string filename) {
+    vector<User> users;
+    ifstream file(filename); 
+    string line;
+
+    while (getline(file, line)) {
+        stringstream ss(line);
+        string name, username, password, locked, attemptsStr;
+        getline(ss, name, '|');
+        getline(ss, username, '|');
+        getline(ss, password, '|');
+        getline(ss, locked, '|');
+        getline(ss, attemptsStr, '|');
+
+        User user;
+        user.setName(name);
+        user.setUsername(username);
+        user.setPassword(password);
+        user.setIsLocked(locked == "1");
+        user.setAttempts(stoi(attemptsStr)); // Set attempts from file string to integer "3" = 3
+        users.push_back(user);
+    }
+    return users;
+}
+
+bool login(vector<User> &users) {
+    string username, password;
+    while (true) {
+        system("cls");
         cout << "========================================" << endl;
         cout << "       HOSPITAL MANAGEMENT SYSTEM       " << endl;
         cout << "========================================" << endl << endl;
         cout << " LOGIN " << endl;
         cout << "----------------------------------------" << endl;
+        if (users.empty()) {
+            cout << "Currently No Account is Registered in the Hospital's DATABASE." << endl << "Please Register an account first" << endl;
+            cout << "Thank you" << endl;
+            pauseWithMessage("Click Enter to Continue");
+            return false;
+        }
         cout << "Enter Username: ";
-        getline(cin, user); // to take multiple words
+        getline(cin, username);
         cout << "Enter Password: ";
-        getline(cin, pass);
-        if (user == "admin" && pass == "Admin@1234") {
-            cout << "\nPlease Wait";
-            for(int i = 1; i <= 3; i++) {
-                cout << ".";
-                Sleep(600); // Pause for 600 milliseconds
-            }
-            cout << "\nLogin Successful! Redirecting to Dashboard." << endl;
-            Sleep(700); // Pause for 700 milliseconds 0.7s
-            return true;
-        }
-        cout << "\n----------------------------------------" << endl;
-        cout << "Invalid credentials! Try again. (" << attempts << " attempts left)\n";
-        cout << "----------------------------------------" << endl;
+        getline(cin, password);
 
-        if (attempts == 0) {
-            cout << "Your Account Has Been Locked Because Of Too Many Attempts." << endl;
-            cout << "[Please Contact The Administration If You Have Forgot Your Password Or Think This Is An Error]" << endl << endl;
-            Sleep(700); // Pause for 700 milliseconds
+        bool userExists = false;
+        for (User &user : users) {
+            if (user.getUsername() == username) {
+                userExists = true;
+
+                if (user.getIsLocked()) {
+                    cout << "Account is locked. Please contact admin." << endl;
+                    pauseWithMessage("Press Enter to continue...");
+                    return false;
+                }
+
+                if (user.getPassword() == password) {
+                    user.resetAttempts(); // Reset attempts on successful login
+                    user.saveUsersToFile("users.csv", users);
+                    loader("Please Wait");
+                    cout << "\nLogin Successful! Redirecting to Dashboard." << endl;
+                    Sleep(700);
+                    return true;
+                } else {
+                    user.decrementAttempts(); // attempts--;
+                    user.saveUsersToFile("users.csv", users);
+                    if (user.getAttempts() <= 0) {
+                        user.setIsLocked(true); // Lock the account
+                        cout << "Your Account Has Been Locked Because Of Too Many Attempts." << endl;
+                        cout << "[Please Contact The Administration If You Have Forgot Your Password Or Think This Is An Error]" << endl << endl;
+                        Sleep(700);
+                        return false;
+                    } else {
+                        cout << "\n----------------------------------------" << endl;
+                        cout << "Invalid credentials! Try again. (" << user.getAttempts() << " attempts left)\n";
+                        cout << "----------------------------------------" << endl;
+                        Sleep(2000);
+                        break; // Break out of the loop to retry
+                    }
+                }
+            }
         }
-        Sleep(2000); // Pause for 2000 milliseconds
+
+        if (!userExists) {
+            // Username does not exist
+            cout << "\n----------------------------------------" << endl;
+            cout << "Invalid User! Try again.\n";
+            cout << "----------------------------------------" << endl;
+            cout << "Do you want to retry? (Y/N): ";
+            char choice;
+            cin >> choice;
+            cin.ignore(); // Used this to Clear the input buffer
+            if (choice == 'N' || choice == 'n') {
+                loader("Exiting Login");
+                return false; // Return to the main menu
+            }
+        }
     }
-    return false;
+}
+
+bool logout() {
+    string s;
+    cout << "========================================" << endl;
+    cout << "                LOGOUT                  " << endl;
+    cout << "========================================" << endl;
+    cout << "Are you sure you want to logout? (Y/N): ";
+    cin >> s;
+    if (s == "Y" || s == "y") {
+        loader("Logging out");
+        return true;
+    } else {
+        return false;
+    }
+}
+
+void registerUser(vector<User> &users) {
+    system("cls");
+    cout << "========================================" << endl;
+    cout << "       HOSPITAL MANAGEMENT SYSTEM       " << endl;
+    cout << "========================================" << endl << endl;
+    cout << " REGISTER " << endl;
+    cout << "----------------------------------------" << endl;
+    string name, username, password;
+    cout << "Enter Your Full Name: ";
+    getline(cin, name);
+    cout << "Enter a username: ";
+    getline(cin, username);
+    cout << "Enter a password: ";
+    getline(cin, password);
+
+    User user;
+    user.setName(name);
+    user.setUsername(username);
+    user.setPassword(password);
+    users.push_back(user);
+
+    user.saveUsersToFile("users.csv", users);
+    cout << "Registration successful!" << endl;
+    pauseWithMessage("Press Enter to continue...");
+}
+
+void unlockAccount(vector<User> &users) {
+    string username, masterKey;
+    cout << "Enter the username of the account to unlock: ";
+    getline(cin, username);
+    cout << "Enter the master key: ";
+    getline(cin, masterKey);
+
+    if (masterKey == MASTER_KEY) {
+        for (User &user : users) {
+            if (user.getUsername() == username) {
+                user.unlockAccount();
+                user.saveUsersToFile("users.csv", users);
+                cout << "Account unlocked successfully!" << endl;
+                pauseWithMessage("Press Enter to continue...");
+                return;
+            }
+        }
+        cout << "Username not found!" << endl;
+    } else {
+        cout << "Invalid master key!" << endl;
+    }
+    pauseWithMessage("Press Enter to continue...");
 }
 
 class Patient {
@@ -126,36 +425,51 @@ public:
     }
 };
 
-void loader(string msg) {
-    cout << msg;
-    for(int i = 0; i < 3; i++) {
-        cout << ".";
-        Sleep(600); // Pause for 600 milliseconds
+void savePatientsToFile(string filename, vector<Patient> &patients) {
+    ofstream file(filename); // Write
+    for (Patient &patient : patients) {
+        file << patient.getId() << "|" << patient.getName() << "|" << patient.getAge() << "|" << patient.getGender() << "|" << patient.getBloodGroup() << "|" << patient.getAddress() << "|" << patient.getContact() << "|" << patient.getEmergencyContact() << "|" << patient.getDisease() << "|" << patient.getDoctorAssigned() << "\n";
     }
-    cout << endl;
 }
 
-void pauseWithMessage(string msg) {
-    cout << endl; 
-    cout << msg;
-    cin.ignore();
-    getchar(); // for enter 
-}
+vector<Patient> loadPatientsFromFile(string filename) {
+    vector<Patient> patients;
+    ifstream file(filename); // read
+    string line;
+    while (getline(file, line)) {
+        stringstream ss(line);
+        string id, name, ageStr, gender, bloodGroup, address, contact, emergencyContact, disease, doctorAssigned;
+        getline(ss, id, '|');
+        getline(ss, name, '|');
+        getline(ss, ageStr, '|');
+        getline(ss, gender, '|');
+        getline(ss, bloodGroup, '|');
+        getline(ss, address, '|');
+        getline(ss, contact, '|');
+        getline(ss, emergencyContact, '|');
+        getline(ss, disease, '|');
+        getline(ss, doctorAssigned, '|');
 
-void validChoice(int &choice) { // 'f'
-    if (choice > 0) {
-        return;
-    } else {
-        cout << "Please Enter a Valid Number" << endl;
-        cin.clear(); // to remove
-        cin.ignore(); // \n
-        choice = 100;
+        Patient patient;
+        patient.setId(id);
+        patient.setName(name);
+        patient.setAge(stoi(ageStr)); // string to integer
+        patient.setGender(gender);
+        patient.setBloodGroup(bloodGroup);
+        patient.setAddress(address);
+        patient.setContact(contact);
+        patient.setEmergencyContact(emergencyContact);
+        patient.setDisease(disease);
+        patient.setDoctorAssigned(doctorAssigned);
+
+        patients.push_back(patient);
     }
+    return patients;
 }
 
 void patientManagement(vector<Patient> &patients) {
-    int choice;
-    do {
+    int choice = 0;
+    while (choice != 6) {
         system("cls");
         cout << "========================================" << endl;
         cout << "          PATIENT MANAGEMENT            " << endl;
@@ -201,7 +515,7 @@ void patientManagement(vector<Patient> &patients) {
                 cin.ignore();
                 getline(cin, disease);
                 cout << "Enter Doctor Assigned: ";
-                cin >> doctorAssigned;
+                getline(cin, doctorAssigned);
 
                 p.setId(id);
                 p.setName(name);
@@ -214,6 +528,7 @@ void patientManagement(vector<Patient> &patients) {
                 p.setDisease(disease);
                 p.setDoctorAssigned(doctorAssigned);
                 patients.push_back(p);
+                savePatientsToFile("patients.csv", patients); // Save to file
                 loader("Registering Patient");
                 cout << "Patient Registered Successfully!" << endl;
                 pauseWithMessage("Press Enter to go back to the menu...");
@@ -320,7 +635,7 @@ void patientManagement(vector<Patient> &patients) {
                             
                             case 9:
                                 cout << "Enter New Doctor Assigned: ";
-                                cin >> doctorAssigned;
+                                getline(cin, doctorAssigned);
                                 p.setDoctorAssigned(doctorAssigned);
                                 break;
                             
@@ -330,6 +645,7 @@ void patientManagement(vector<Patient> &patients) {
                         }
 
                         loader("Updating");
+                        savePatientsToFile("patients.csv", patients); // Save to file
                         cout << "Patient Information Updated Successfully!" << endl;
                         found = true;
                         break;
@@ -348,9 +664,11 @@ void patientManagement(vector<Patient> &patients) {
                 string id;
                 cout << "Enter Patient ID to Delete: "; cin >> id;
                 bool found = false;
+                //  pointer arr[1] address
                 for (auto it = patients.begin(); it != patients.end(); ++it) {
                     if (it->getId() == id) {
                         patients.erase(it);
+                        savePatientsToFile("patients.csv", patients); // Save to file
                         loader("Deleting Patient Data");
                         cout << "Patient Record Deleted Successfully!" << endl;
                         found = true;
@@ -367,10 +685,10 @@ void patientManagement(vector<Patient> &patients) {
                 cout << "----------------------------------------" << endl;
                 cout << "         VIEW ALL PATIENT RECORD        " << endl;
                 cout << "----------------------------------------" << endl;
-                string password;
-                cout << "Enter Password: ";
-                cin >> password;
-                if (password == "Admin@1234") {
+                string masterKey;
+                cout << "Enter MASTER KEY: ";
+                cin >> masterKey;
+                if (masterKey == MASTER_KEY) {
                     cout << "Verification Successful" << endl;
                     loader("Fetching Data");
                     for (Patient &p : patients) {
@@ -380,6 +698,10 @@ void patientManagement(vector<Patient> &patients) {
                     if (patients.empty()) {
                         cout << "Error: Patient Records Not Found" << endl;
                     }
+                } else {
+                    cout << "\n----------------------------------------" << endl;
+                    cout << "           Invalid MASTER KEY!\n";
+                    cout << "----------------------------------------" << endl;
                 }
                 pauseWithMessage("Hit Enter to proceed");
                 break;
@@ -391,26 +713,91 @@ void patientManagement(vector<Patient> &patients) {
                 cout << "Invalid choice! Try again." << endl;
                 pauseWithMessage("Press Enter to retry");
         }
-    } while (choice != 6);
-}
-
-bool logout() {
-    string s;
-    cout << "========================================" << endl;
-    cout << "                LOGOUT                  " << endl;
-    cout << "========================================" << endl;
-    cout << "Are you sure you want to logout? (Y/N): ";
-    cin >> s;
-    if (s == "Y" || s == "y") {
-        loader("Logging out");
-        return true;
-    } else {
-        return false;
     }
 }
 
-void dashboard() {
-    vector<Patient> patients;
+void adminManagement(vector<User> &users) {
+    system("cls");
+    string masterKey;
+    cout << "========================================" << endl;
+    cout << "         ADMINISTRATOR ACCESS           " << endl;
+    cout << "========================================" << endl;
+    cout << "You are not a superuser. Enter the Master Key to gain access." << endl;
+    cout << "Enter Master Key: ";
+    getline(cin, masterKey);
+
+    if (masterKey != MASTER_KEY) {
+        cout << "\n----------------------------------------" << endl;
+        cout << "Invalid master key! Access denied." << endl;
+        cout << "Please contact the system administrator if you believe this is an error." << endl;
+        cout << "----------------------------------------" << endl;
+        pauseWithMessage("Press Enter to return to the main menu...");
+        return;
+    }
+
+    loader("Verifying Master Key. Please wait");
+    cout << "Verified" << endl;
+    loader("Entering Admin Menu");
+    int choice = 0;
+    while (choice != 5) {
+        system("cls");
+        cout << "========================================" << endl;
+        cout << "           ADMINISTRATOR MENU           " << endl;
+        cout << "========================================" << endl;
+        cout << "1. Reset User Password" << endl;
+        cout << "2. Unlock User Account" << endl;
+        cout << "3. Remove User Account" << endl;
+        cout << "4. View All Users" << endl;
+        cout << "5. Back to Main Menu" << endl;
+        cout << "Enter your choice: ";
+        cin >> choice;
+        cin.ignore();
+
+        switch (choice) {
+            case 1: {
+                User admin;
+                admin.resetPassword(users, masterKey);
+                pauseWithMessage("Press Enter to continue...");
+                break;
+            }
+            case 2: {
+                User admin;
+                admin.unlockUserAccount(users, masterKey);
+                pauseWithMessage("Press Enter to continue...");
+                break;
+            }
+            case 3: {
+                User admin;
+                admin.removeUserAccount(users, masterKey);
+                pauseWithMessage("Press Enter to continue...");
+                break;
+            }
+            case 4: {
+                cout << "\n----------------------------------------" << endl;
+                cout << "           ALL USER ACCOUNTS            " << endl;
+                cout << "----------------------------------------" << endl;
+                for (User &user : users) {
+                    cout << "Name: " << user.getName() << endl;
+                    cout << "Username: " << user.getUsername() << endl;
+                    cout << "Status: " << (user.getIsLocked() ? "Locked" : "Active") << endl;
+                    cout << "----------------------------------------" << endl;
+                }
+                pauseWithMessage("Press Enter to continue...");
+                break;
+            }
+            case 5:
+                loader("Returning to Main Menu");
+                break;
+            default:
+                cout << "Invalid choice! Try again." << endl;
+                pauseWithMessage("Press Enter to retry");
+        }
+    }
+}
+
+void dashboard(vector<User> &users) {
+    vector<Patient> patients = loadPatientsFromFile("patients.csv"); // Load patients from file
+
     // vector<Doctor> doctors;
     // vector<Appointment> appointments;
     // vector<Bill> bills;
@@ -420,7 +807,7 @@ void dashboard() {
 
     int choice;
     bool isLogout = false;
-    do { // at least 1 time print hobe
+    while (isLogout == false) {
         system("cls"); // too clear the terminal screen
         cout << "========================================" << endl;
         cout << "  HOSPITAL MANAGEMENT SYSTEM DASHBOARD  " << endl;
@@ -428,12 +815,10 @@ void dashboard() {
         cout << "1. Patient Management" << endl;
         cout << "2. Doctor Management" << endl;
         cout << "3. Appointment Management" << endl;
-        cout << "4. Billing & Payments" << endl;
-        cout << "5. Medical Records" << endl;
-        cout << "6. Pharmacy & Inventory" << endl;
-        cout << "7. Staff & Admin Management" << endl;
-        cout << "8. Reports & Statistics" << endl;
-        cout << "9. Logout" << endl;
+        cout << "4. Pharmacy & Inventory" << endl;
+        cout << "5. Admin Management" << endl; // I have removed Staff Management We will Discuss it with our teacher about it
+        cout << "6. Reports & Statistics" << endl;
+        cout << "7. Logout" << endl;
         cout << "Enter your choice: ";
         cin >> choice;
         cin.ignore(); // '\n'
@@ -452,25 +837,16 @@ void dashboard() {
                 break;
             case 4:
                 cout << "Development in Progress" << endl;
-                // billingManagement(bills, patients);
+                // pharmacyManagement(medicines);
                 break;
             case 5:
-                cout << "Development in Progress" << endl;
-                // medicalRecordsManagement(records, patients);
+                adminManagement(users);
                 break;
             case 6:
                 cout << "Development in Progress" << endl;
-                // pharmacyManagement(medicines);
-                break;
-            case 7:
-                cout << "Development in Progress" << endl;
-                // staffManagement(staff);
-                break;
-            case 8:
-                cout << "Development in Progress" << endl;
                 // reportsManagement(patients, doctors, bills);
                 break;
-            case 9:
+            case 7:
                 system("cls");
                 if(logout()) {
                     isLogout = true;
@@ -479,21 +855,47 @@ void dashboard() {
             default: 
                 cout << "Invalid choice! Try again." << endl;
                 pauseWithMessage("Press Enter to retry");
-            }
-            if (choice != 1 && choice != 9) {
-                getchar();
-            }
-    } while (isLogout == false);
+        }
+        if (choice != 1 && choice != 7 && choice != 5) {
+            getchar();
+        }
+    }
 }
 
-
+void initialMenu(vector<User> &users) {
+    int choice;
+    while (true) {
+        system("cls");
+        cout << "========================================" << endl;
+        cout << "       HOSPITAL MANAGEMENT SYSTEM       " << endl;
+        cout << "========================================" << endl << endl;
+        cout << "1. Register" << endl;
+        cout << "2. Login" << endl;
+        cout << "3. Exit" << endl;
+        cout << "Enter your choice: ";
+        cin >> choice;
+        cin.ignore();
+        switch (choice) {
+            case 1:
+                registerUser(users);
+                break;
+            case 2:
+                if (login(users)) {
+                    dashboard(users);
+                }
+                break;
+            case 3:
+                loader("Exiting");
+                return;
+            default:
+                cout << "Invalid choice! Try again." << endl;
+                pauseWithMessage("Press Enter to retry");
+        }
+    }
+}
 
 int main() {
-    if (login() == true) {
-        // Redirect to the main dashboard
-        dashboard();
-    } else {
-        cout << "Access Denied!" << endl;
-    }
+    vector<User> users = loadUsersFromFile("users.csv");
+    initialMenu(users);
     return 0;
 }
