@@ -44,44 +44,20 @@ public:
         isLocked = false;
         attempts = 3;
     }
-    void setName(string n) {
-        name = n;
-    }
-    void setUsername(string u) { 
-        username = u;
-    }
-    void setPassword(string p) { 
-        password = p;
-    }
-    void setIsLocked(bool locked) { 
-        isLocked = locked;
-    }
-    void setAttempts(int a) {
-        attempts = a;
-    }
-    string getName() {
-        return name;
-    }
-    string getUsername() { 
-        return username;
-    }
-    string getPassword() { 
-        return password;
-    }
-    bool getIsLocked() { 
-        return isLocked;
-    }
-    int getAttempts() {
-        return attempts;
-    }
-    void decrementAttempts() {
-        attempts--;
-    }
+    void setName(string n) { name = n; }
+    void setUsername(string u) {  username = u; }
+    void setPassword(string p) {  password = p; }
+    void setIsLocked(bool locked) {  isLocked = locked; }
+    void setAttempts(int a) { attempts = a; }
+    string getName() { return name; }
+    string getUsername() {  return username; }
+    string getPassword() {  return password; }
+    bool getIsLocked() {  return isLocked; }
+    int getAttempts() { return attempts; }
+    void decrementAttempts() { attempts--; }
 
     // Reset attempts (after successful login or unlocking we are going to reset it)
-    void resetAttempts() {
-        attempts = 3;
-    }
+    void resetAttempts() { attempts = 3; }
 
     // Unlock account
     void unlockAccount() {
@@ -161,7 +137,7 @@ public:
         cout << "Enter the username of the account to remove: ";
         getline(cin, targetUsername);
 
-        for (auto it = users.begin(); it != users.end(); ++it) {
+        for (auto it = users.begin(); it != users.end(); it++) {
             if (it->getUsername() == targetUsername) {
                 users.erase(it);
                 loader("Removing");
@@ -347,66 +323,26 @@ class Patient {
     int age;
 public:
     // Setter and Getter Functions I hope you reviewed it
-    void setId(string id) {
-        patientId = id; 
-    }
-    string getId() {
-        return patientId;
-    }
-    void setName(string name) {
-        this->name = name;
-    }
-    string getName() {
-        return name;
-    }
-    void setAge(int age) {
-        this->age = age;
-    }
-    int getAge() {
-        return age;
-    }
-    void setGender(string gender) {
-        this->gender = gender;
-    }
-    string getGender() {
-        return gender;
-    }
-    void setBloodGroup(string bloodGroup) {
-        this->bloodGroup = bloodGroup;
-    }
-    string getBloodGroup() {
-        return bloodGroup;
-    }
-    void setAddress(string address) {
-        this->address = address;
-    }
-    string getAddress() {
-        return address;
-    }
-    void setContact(string contact) {
-        this->contact = contact;
-    }
-    string getContact() {
-        return contact;
-    }
-    void setEmergencyContact(string emergencyContact) {
-        this->emergencyContact = emergencyContact;
-    }
-    string getEmergencyContact() {
-        return emergencyContact;
-    }
-    void setDisease(string disease) {
-        this->disease = disease;
-    }
-    string getDisease() {
-        return disease;
-    }
-    void setDoctorAssigned(string doctorAssigned) {
-        this->doctorAssigned = doctorAssigned;
-    }
-    string getDoctorAssigned() {
-        return doctorAssigned;
-    }
+    void setId(string id) { patientId = id; }
+    string getId() { return patientId; }
+    void setName(string name) { this->name = name; }
+    string getName() { return name; }
+    void setAge(int age) { this->age = age; }
+    int getAge() { return age; }
+    void setGender(string gender) { this->gender = gender; }
+    string getGender() { return gender; }
+    void setBloodGroup(string bloodGroup) { this->bloodGroup = bloodGroup; }
+    string getBloodGroup() { return bloodGroup; }
+    void setAddress(string address) { this->address = address; }
+    string getAddress() { return address; }
+    void setContact(string contact) { this->contact = contact; }
+    string getContact() { return contact; }
+    void setEmergencyContact(string emergencyContact) { this->emergencyContact = emergencyContact; }
+    string getEmergencyContact() { return emergencyContact; }
+    void setDisease(string disease) { this->disease = disease; }
+    string getDisease() { return disease; }
+    void setDoctorAssigned(string doctorAssigned) { this->doctorAssigned = doctorAssigned; }
+    string getDoctorAssigned() { return doctorAssigned; }
  
     // Here I made a Function for displaying Patient data
     void viewPatientDetails() {
@@ -664,12 +600,11 @@ void patientManagement(vector<Patient> &patients) {
                 string id;
                 cout << "Enter Patient ID to Delete: "; cin >> id;
                 bool found = false;
-                //  pointer arr[1] address
-                for (auto it = patients.begin(); it != patients.end(); ++it) {
+                for (auto it = patients.begin(); it != patients.end(); it++) {
                     if (it->getId() == id) {
                         patients.erase(it);
-                        savePatientsToFile("patients.csv", patients); // Save to file
                         loader("Deleting Patient Data");
+                        savePatientsToFile("patients.csv", patients); // Save to file
                         cout << "Patient Record Deleted Successfully!" << endl;
                         found = true;
                         break;
@@ -697,6 +632,284 @@ void patientManagement(vector<Patient> &patients) {
 
                     if (patients.empty()) {
                         cout << "Error: Patient Records Not Found" << endl;
+                    }
+                } else {
+                    cout << "\n----------------------------------------" << endl;
+                    cout << "           Invalid MASTER KEY!\n";
+                    cout << "----------------------------------------" << endl;
+                }
+                pauseWithMessage("Hit Enter to proceed");
+                break;
+            }
+            case 6:
+                loader("Returning to Main Menu");
+                break;
+            default:
+                cout << "Invalid choice! Try again." << endl;
+                pauseWithMessage("Press Enter to retry");
+        }
+    }
+}
+
+class Doctor {
+    string id, name, specialization, contact, experience, availability;
+public:
+    void setId(string id) { 
+        this->id = id;
+    } 
+    string getId() { return id; }
+    void setName(string name) { this->name = name; }
+    string getName() { return name; }
+    void setSpecialization(string specialization) { this->specialization = specialization; }
+    string getSpecialization() { return specialization; }
+    void setExperience(string experience) { this->experience = experience; }
+    string getExperience() { return experience; }
+    void setAvailability(string availability) { this->availability = availability; }
+    string getAvailability() { return availability; }
+    void setContact(string contact) { this->contact = contact; }
+    string getContact() { return contact; }
+
+    void viewDoctorDetails() {
+        cout << "\n----------------------------------------" << endl;
+        cout << "Doctor ID: " << id << endl;
+        cout << "Name: " << name << endl;
+        cout << "Specialization: " << specialization << endl;
+        cout << "Experience: " << experience << " years" << endl;
+        cout << "Available: " << (availability == "true" ? "Yes" : "No") << endl;
+        cout << "Contact: " << contact << endl;
+        cout << "----------------------------------------" << endl;
+    }
+};
+
+void saveDoctorsToFile(string filename, vector<Doctor> &doctors) {
+    ofstream file(filename); // Write
+    for (Doctor &doctor : doctors) {
+        file << doctor.getId() << "|" << doctor.getName() << "|" << doctor.getSpecialization() << "|" << doctor.getContact() << "|" << doctor.getExperience() << "|" << doctor.getAvailability() << "\n";
+    }
+}
+
+vector<Doctor> loadDoctorsFromFile(string filename) {
+    vector<Doctor> doctors;
+    ifstream file(filename); // read
+    string line;
+    while (getline(file, line)) {
+        stringstream ss(line);
+        string id, name, specialization, contact, experience, availability;
+        getline(ss, id, '|');
+        getline(ss, name, '|');
+        getline(ss, specialization, '|');
+        getline(ss, contact, '|');
+        getline(ss, experience, '|');
+        getline(ss, availability);
+
+        Doctor doctor;
+        doctor.setId(id);
+        doctor.setName(name);
+        doctor.setSpecialization(specialization);
+        doctor.setContact(contact);
+        doctor.setExperience(experience);
+        doctor.setAvailability(availability);
+
+
+        doctors.push_back(doctor);
+    }
+    return doctors;
+}
+
+void doctorManagement(vector<Doctor> &doctors) {
+    int choice = 0;
+    while (choice != 6) {
+        system("cls");
+        cout << "========================================" << endl;
+        cout << "          DOCTOR MANAGEMENT            " << endl;
+        cout << "========================================" << endl;
+        cout << "1. Register New Doctor" << endl;
+        cout << "2. View Doctor Details" << endl;
+        cout << "3. Update Doctor Info" << endl;
+        cout << "4. Delete Doctor Record" << endl;
+        cout << "5. View All Doctor Details" << endl;
+        cout << "6. Back to Main Menu" << endl;
+        cout << "Enter your choice: ";
+        cin >> choice;
+        cin.ignore();
+        validChoice(choice);
+        switch (choice) {
+            case 1: {
+                cout << "----------------------------------------" << endl;
+                cout << "           REGISTER NEW DOCTOR         " << endl;
+                cout << "----------------------------------------" << endl;
+                cout << "Enter Doctor Details:" << endl << endl;
+                Doctor d;
+                string id, name, specialization, contact, experience, availability;
+                cout << "Enter Doctor ID: ";
+                cin >> id;
+                cout << "Enter Name: ";
+                cin.ignore();
+                getline(cin, name);
+                cout << "Enter Specialization: ";
+                getline(cin, specialization);
+                cout << "Enter Experience: ";
+                cin >> experience;
+                cout << "Enter Contact: ";
+                cin.ignore();
+                getline(cin, contact);
+                cout << "Is Available(true/false): ";
+                cin >> availability;
+
+                d.setId(id);
+                d.setName(name);
+                d.setSpecialization(specialization);
+                d.setExperience(experience);
+                d.setAvailability(availability);
+                d.setContact(contact);
+                doctors.push_back(d);
+
+                saveDoctorsToFile("doctors.csv", doctors); // Save to file
+                loader("Registering Doctor");
+                cout << "Doctor Registered Successfully!" << endl;
+                pauseWithMessage("Press Enter to go back to the menu...");
+                break;
+            }
+            case 2: {
+                cout << "----------------------------------------" << endl;
+                cout << "             DOCTOR DETAILS            " << endl;
+                cout << "----------------------------------------" << endl;
+                string id;
+                cout << "Enter DOCTOR ID: ";
+                cin >> id;
+                bool found = false;
+                loader("Searching");
+                for (Doctor &d : doctors) {
+                    if (d.getId() == id) {
+                        cout << "Doctor Found" << endl;
+                        d.viewDoctorDetails();
+                        found = true;
+                        break;
+                    }
+                }
+                if (found == false) {
+                    cout << "Error: Doctor ID not found!" << endl;
+                }
+                pauseWithMessage("Press Enter to continue...");
+                break;
+            }
+            case 3: {
+                cout << "----------------------------------------" << endl;
+                cout << "           UPDATE DOCTOR INFO          " << endl;
+                cout << "----------------------------------------" << endl;
+                string id;
+                cout << "Enter Doctor ID: ";
+                cin >> id;
+                bool found = false;
+                for (Doctor &d : doctors) {
+                    if (d.getId() == id) {
+                        string id, name, specialization, contact, experience, availability;
+                        cout << "What do you want to update?" << endl;
+                        cout << "1. Update Doctor Name" << endl;
+                        cout << "2. Update Doctor Specialization" << endl;
+                        cout << "3. Update Doctor Experience" << endl;
+                        cout << "4. Update Doctor Contact" << endl;
+                        cout << "5. Update Doctor Availability" << endl;
+                        cout << "6. Go Back" << endl;
+                        int update;
+                        cout << "Enter Your Choice: ";
+                        cin >> update;
+                        cin.ignore();
+                        validChoice(update);
+                        switch (update) {
+                            case 1:
+                                cout << "Enter New Name: ";
+                                getline(cin, name);
+                                d.setName(name);
+                                break;
+
+                            case 2:
+                                cout << "Enter New Specialization: ";
+                                getline(cin, specialization);
+                                d.setSpecialization(specialization);
+                                break;
+
+                            case 3:
+                                cout << "Enter New Experience: ";
+                                cin >> experience;
+                                d.setExperience(experience);
+                                break;
+
+                            case 4:
+                                cout << "Enter New Contact: ";
+                                getline(cin, contact);
+                                d.setContact(contact);
+                                break;
+
+                            case 5:
+                                cout << "Enter New Availability: ";
+                                cin >> availability;
+                                d.setAvailability(availability);
+                                break;
+
+                            case 6:
+                                loader("Going Back");
+                                break;
+                            
+                            default:
+                                cout << "Invalid choice! Try again." << endl;
+                                pauseWithMessage("Press Enter to retry");
+                        }
+
+                        if (update != 6) {
+                            loader("Updating");
+                            saveDoctorsToFile("doctors.csv", doctors); // Save to file
+                            cout << "Patient Information Updated Successfully!" << endl;
+                        }
+                        found = true;
+                        break;
+                    }
+                }
+                if (found == false) {
+                    cout << "Error: Doctor ID not found!" << endl;
+                }
+                pauseWithMessage("Press Enter to continue...");
+                break;
+            }
+            case 4: {
+                cout << "----------------------------------------" << endl;
+                cout << "         DELETE DOCTOR RECORD          " << endl;
+                cout << "----------------------------------------" << endl;
+                string id;
+                cout << "Enter Doctor ID to Delete: "; cin >> id;
+                bool found = false;
+                for (auto it = doctors.begin(); it != doctors.end(); it++) {
+                    if (it->getId() == id) {
+                        doctors.erase(it);
+                        loader("Deleting Doctor Data");
+                        saveDoctorsToFile("doctors.csv", doctors); // Save to file
+                        cout << "Doctor Record Deleted Successfully!" << endl;
+                        found = true;
+                        break;
+                    }
+                }
+                if (found == false) {
+                    cout << "Error: Doctor ID not found!" << endl;
+                }
+                pauseWithMessage("Press Enter to continue...");
+                break;
+            }
+            case 5: {
+                cout << "----------------------------------------" << endl;
+                cout << "         VIEW ALL DOCTOR RECORD        " << endl;
+                cout << "----------------------------------------" << endl;
+                string masterKey;
+                cout << "Enter MASTER KEY: ";
+                cin >> masterKey;
+                if (masterKey == MASTER_KEY) {
+                    cout << "Verification Successful" << endl;
+                    loader("Fetching Data");
+                    for (Doctor &d : doctors) {
+                        d.viewDoctorDetails();
+                    }
+
+                    if (doctors.empty()) {
+                        cout << "Error: Doctor Records Not Found" << endl;
                     }
                 } else {
                     cout << "\n----------------------------------------" << endl;
@@ -795,15 +1008,292 @@ void adminManagement(vector<User> &users) {
     }
 }
 
-void dashboard(vector<User> &users) {
-    vector<Patient> patients = loadPatientsFromFile("patients.csv"); // Load patients from file
+class Staff {
+    string id, name, role, shift, salary, joiningDate;
+public:
+    void setId(string id) { this->id = id; }
+    string getId() { return id; }
+    void setName(string name) { this->name = name; }
+    string getName() { return name; }
+    void setRole(string role) { this->role = role; }
+    string getRole() { return role; }
+    void setShift(string shift) { this->shift = shift; }
+    string getShift() { return shift; }
+    void setSalary(string salary) { this->salary = salary; }
+    string getSalary() { return salary; }
+    void setJoiningDate(string joiningDate) { this->joiningDate = joiningDate; }
+    string getJoiningDate() { return joiningDate; }
 
-    // vector<Doctor> doctors;
+    void viewStaffDetails() {
+        cout << "\n----------------------------------------" << endl;
+        cout << "Staff ID: " << id << endl;
+        cout << "Name: " << name << endl;
+        cout << "Role: " << role << endl;
+        cout << "Shift: " << shift << endl;
+        cout << "Salary: " << salary << "TK" << endl;
+        cout << "Joining Date: " << joiningDate << endl;
+        cout << "----------------------------------------" << endl;
+    }
+};
+
+void saveStaffsToFile(string filename, vector<Staff> &staffs) {
+    ofstream file(filename);
+    for (Staff &staff : staffs) {
+        file << staff.getId() << "," << staff.getName() << "," << staff.getRole() << "," << staff.getShift() << "," << staff.getSalary() << "," << staff.getJoiningDate() << endl;
+    }
+}
+
+vector<Staff> loadStaffsFromFile(string filename) {
+    vector<Staff> staffs;
+    ifstream file(filename); // read
+    string line;
+    while (getline(file, line)) {
+        stringstream ss(line);
+        string id, name, role, shift, salary, joiningDate;
+        getline(ss, id, ',');
+        getline(ss, name, ',');
+        getline(ss, role, ',');
+        getline(ss, shift, ',');
+        getline(ss, salary, ',');
+        getline(ss, joiningDate);
+
+        Staff staff;
+        staff.setId(id);
+        staff.setName(name);
+        staff.setRole(role);
+        staff.setShift(shift);
+        staff.setSalary(salary);
+        staff.setJoiningDate(joiningDate);
+
+        staffs.push_back(staff);
+    }
+    return staffs;
+}
+
+void staffManagement(vector<Staff> &staffs) {
+    int choice = 0;
+    while (choice != 6) {
+        system("cls");
+        cout << "========================================" << endl;
+        cout << "          STAFF MANAGEMENT" << endl;
+        cout << "========================================" << endl;
+        cout << "1. Add New Staff Member" << endl;
+        cout << "2. View Staff Details" << endl;
+        cout << "3. Update Staff Information" << endl;
+        cout << "4. Remove Staff Member" << endl;
+        cout << "5. View All Staffs Details" << endl;
+        cout << "6. Back to Main Menu" << endl;
+        cout << "Enter your choice: ";
+        cin >> choice;
+        cin.ignore();
+        validChoice(choice);
+        switch (choice) {
+            case 1: {
+                cout << "----------------------------------------" << endl;
+                cout << "           REGISTER NEW STAFF         " << endl;
+                cout << "----------------------------------------" << endl;
+                cout << "Enter Staff Details:" << endl << endl;
+                Staff s;
+                string id, name, role, shift, joiningDate;
+                string salary;
+                cout << "Enter Staff ID: ";
+                cin >> id;
+                cout << "Enter Name: ";
+                cin.ignore();
+                getline(cin, name);
+                cout << "Enter Role(Receptionist/Nurse/Cleaner/Electrician): ";
+                cin >> role;
+                cout << "Enter Shift(Day/Night): ";
+                cin >> shift;
+                cout << "Enter Salary: ";
+                cin >> salary;
+                cout << "Enter Joining Date (DD-MM-YYYY): ";
+                cin.ignore();
+                getline(cin, joiningDate);
+
+                s.setId(id);
+                s.setName(name);
+                s.setRole(role);
+                s.setShift(shift);
+                s.setSalary(salary);
+                s.setJoiningDate(joiningDate);
+
+                staffs.push_back(s);
+                saveStaffsToFile("staffs.csv", staffs);
+                loader("Registering Staff");
+                cout << "Staff Registered Successfully!" << endl;
+                pauseWithMessage("Press Enter to go back to the menu...");
+                break;
+            }
+            case 2: {
+                cout << "----------------------------------------" << endl;
+                cout << "             STAFF DETAILS            " << endl;
+                cout << "----------------------------------------" << endl;
+                string id;
+                cout << "Enter Staff ID: ";
+                cin >> id;
+                bool found = false;
+                loader("Searching");
+                for (Staff &s : staffs) {
+                    if (s.getId() == id) {
+                        cout << "Staff Found" << endl;
+                        s.viewStaffDetails();
+                        found = true;
+                        break;
+                    }
+                }
+                if (found == false) {
+                    cout << "Error: Staff ID not found!" << endl;
+                }
+                pauseWithMessage("Press Enter to continue...");
+                break;
+            }
+            case 3: {
+                cout << "----------------------------------------" << endl;
+                cout << "           UPDATE STAFF INFO          " << endl;
+                cout << "----------------------------------------" << endl;
+                string id;
+                cout << "Enter Staff ID: ";
+                cin >> id;
+                bool found = false;
+                for (Staff &s : staffs) {
+                    if (s.getId() == id) {
+                        string name, role, shift, joiningDate, salary;
+                        cout << "Select Field to Update:" << endl;
+                        cout << "1. Name" << endl;
+                        cout << "2. Role" << endl;
+                        cout << "3. Shift" << endl;
+                        cout << "4. Salary" << endl;
+                        cout << "5. Joining Date" << endl;
+                        cout << "6. Cancel" << endl;
+                        int update;
+                        cout << "Enter Your Choice: ";
+                        cin >> update;
+                        cin.ignore();
+                        validChoice(update);
+                        switch (update) {
+                            case 1:
+                                cout << "Enter New Name: ";
+                                getline(cin, name);
+                                s.setName(name);
+                                break;
+
+                            case 2:
+                                cout << "Enter New Role: ";
+                                cin >> role;
+                                s.setRole(role);
+                                break;
+
+                            case 3:
+                                cout << "Enter New Shift(Day/Night)";
+                                cin >> shift;
+                                s.setShift(shift);
+                                break;
+
+                            case 4:
+                                cout << "Enter New Salary";
+                                cin >> salary;
+                                s.setSalary(salary);
+                                break;
+
+                            case 5:
+                                cout << "Enter New Joining Date (DD-MM-YYYY): ";
+                                getline(cin, joiningDate);
+                                s.setJoiningDate(joiningDate);
+                                break;
+
+                            case 6:
+                                loader("Going Back");
+                                break;
+                            
+                            default:
+                            cout << "Invalid choice! Try again." << endl;
+                            pauseWithMessage("Press Enter to retry");
+                        }
+
+                        if (update != 6) {
+                            loader("Updating");
+                            saveStaffsToFile("staffs.csv", staffs); // Save to file
+                            cout << "Staff Information Updated Successfully!" << endl;
+                        }
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (found == false) {
+                    cout << "Error: Staff ID not found!" << endl;
+                }
+                
+                pauseWithMessage("Press Enter to continue...");
+                break;
+            }
+            case 4: {
+                cout << "----------------------------------------" << endl;
+                cout << "         DELETE STAFF RECORD          " << endl;
+                cout << "----------------------------------------" << endl;
+                string id;
+                cout << "Enter Staff ID to Remove: "; cin >> id;
+                bool found = false;
+                for (auto it = staffs.begin(); it != staffs.end(); it++) {
+                    if (it->getId() == id) {
+                        staffs.erase(it);
+                        saveStaffsToFile("staffs.csv", staffs); // Save to file
+                        loader("Deleting Staff Data");
+                        cout << "Staff Record Deleted Successfully!" << endl;
+                        found = true;
+                        break;
+                    }
+                }
+                if (found == false) {
+                    cout << "Error: Staff ID not found!" << endl;
+                }
+                pauseWithMessage("Press Enter to continue...");
+                break;
+            }
+            case 5: {
+                cout << "----------------------------------------" << endl;
+                cout << "         VIEW ALL STAFFS DETAILS        " << endl;
+                cout << "----------------------------------------" << endl;
+                string masterKey;
+                cout << "Enter MASTER KEY: ";
+                cin >> masterKey;
+                if (masterKey == MASTER_KEY) {
+                    cout << "Verification Successful" << endl;
+                    loader("Fetching Data");
+                    for (Staff &s : staffs) {
+                        s.viewStaffDetails();
+                    }
+
+                    if (staffs.empty()) {
+                        cout << "Error: Staff Records Not Found" << endl;
+                    }
+                } else {
+                    cout << "\n----------------------------------------" << endl;
+                    cout << "           Invalid MASTER KEY!\n";
+                    cout << "----------------------------------------" << endl;
+                }
+                pauseWithMessage("Hit Enter to proceed");
+                break;
+            }
+            case 6:
+                loader("Returning to Main Menu");
+                break;
+            default:
+                cout << "Invalid choice! Try again." << endl;
+                pauseWithMessage("Press Enter to retry");
+        }
+    }
+}
+
+void dashboard(vector<User> &users) {
+    vector<Patient> patients = loadPatientsFromFile("patients.csv");
+    vector<Doctor> doctors = loadDoctorsFromFile("doctors.csv");
     // vector<Appointment> appointments;
     // vector<Bill> bills;
     // vector<MedicalRecord> records;
     // vector<Medicine> medicines;
-    // vector<Staff> staff;
+    vector<Staff> staffs = loadStaffsFromFile("staffs.csv");
 
     int choice;
     bool isLogout = false;
@@ -816,9 +1306,10 @@ void dashboard(vector<User> &users) {
         cout << "2. Doctor Management" << endl;
         cout << "3. Appointment Management" << endl;
         cout << "4. Pharmacy & Inventory" << endl;
-        cout << "5. Admin Management" << endl; // I have removed Staff Management We will Discuss it with our teacher about it
-        cout << "6. Reports & Statistics" << endl;
-        cout << "7. Logout" << endl;
+        cout << "5. Admin Management" << endl;
+        cout << "6. Staff Management" << endl;
+        cout << "7. Reports & Statistics" << endl;
+        cout << "8. Logout" << endl;
         cout << "Enter your choice: ";
         cin >> choice;
         cin.ignore(); // '\n'
@@ -828,8 +1319,7 @@ void dashboard(vector<User> &users) {
                 patientManagement(patients);
                 break;
             case 2:
-                cout << "Development in Progress" << endl;
-                // doctorManagement(doctors);
+                doctorManagement(doctors);
                 break;
             case 3:
                 cout << "Development in Progress" << endl;
@@ -843,10 +1333,13 @@ void dashboard(vector<User> &users) {
                 adminManagement(users);
                 break;
             case 6:
+                staffManagement(staffs);
+                break;
+            case 7:
                 cout << "Development in Progress" << endl;
                 // reportsManagement(patients, doctors, bills);
                 break;
-            case 7:
+            case 8:
                 system("cls");
                 if(logout()) {
                     isLogout = true;
@@ -856,7 +1349,7 @@ void dashboard(vector<User> &users) {
                 cout << "Invalid choice! Try again." << endl;
                 pauseWithMessage("Press Enter to retry");
         }
-        if (choice != 1 && choice != 7 && choice != 5) {
+        if (choice != 1 && choice != 8 && choice != 5 && choice != 6) {
             getchar();
         }
     }
