@@ -68,8 +68,8 @@ public:
     void saveUsersToFile(string filename, vector<User> &users) {
         ofstream file(filename); // write
         for (User &user : users) {
-            file << user.getName() << "|" << user.getUsername() << "|" << user.getPassword() << "|" 
-                 << (user.getIsLocked() ? "1" : "0") << "|" << user.getAttempts() << "\n";
+            file << user.getName() << "," << user.getUsername() << "," << user.getPassword() << "," 
+                 << (user.getIsLocked() ? "1" : "0") << "," << user.getAttempts() << "\n";
         }
     }
 
@@ -80,14 +80,21 @@ public:
             return false;
         }
 
-        string targetUsername, newPassword;
+        string targetUsername, newPassword, confirmPassword;
         cout << "Enter the username of the account to reset: ";
         getline(cin, targetUsername);
-        cout << "Enter the new password: ";
-        getline(cin, newPassword);
 
         for (User &user : users) {
             if (user.getUsername() == targetUsername) {
+                cout << "Enter the new password: ";
+                getline(cin, newPassword);
+                cout << "Re enter new password: ";
+                getline(cin, confirmPassword);
+        
+                if (newPassword != confirmPassword) {
+                    cout << "Incorrect Password!" << endl;
+                    return false;
+                }
                 user.setPassword(newPassword);
                 loader("Please Wait");
                 saveUsersToFile("users.csv", users);
@@ -160,11 +167,11 @@ vector<User> loadUsersFromFile(string filename) {
     while (getline(file, line)) {
         stringstream ss(line);
         string name, username, password, locked, attemptsStr;
-        getline(ss, name, '|');
-        getline(ss, username, '|');
-        getline(ss, password, '|');
-        getline(ss, locked, '|');
-        getline(ss, attemptsStr, '|');
+        getline(ss, name, ',');
+        getline(ss, username, ',');
+        getline(ss, password, ',');
+        getline(ss, locked, ',');
+        getline(ss, attemptsStr, ',');
 
         User user;
         user.setName(name);
@@ -194,8 +201,6 @@ bool login(vector<User> &users) {
         }
         cout << "Enter Username: ";
         getline(cin, username);
-        cout << "Enter Password: ";
-        getline(cin, password);
 
         bool userExists = false;
         for (User &user : users) {
@@ -207,6 +212,9 @@ bool login(vector<User> &users) {
                     pauseWithMessage("Press Enter to continue...");
                     return false;
                 }
+
+                cout << "Enter Password: ";
+                getline(cin, password);
 
                 if (user.getPassword() == password) {
                     user.resetAttempts(); // Reset attempts on successful login
@@ -279,6 +287,13 @@ void registerUser(vector<User> &users) {
     getline(cin, name);
     cout << "Enter a username: ";
     getline(cin, username);
+    for (User &user : users) {
+        if (user.getUsername() == username) {
+            cout << "User Already Exist! Please use another username :)" << endl;
+            pauseWithMessage("Hit Enter To Proceed"); // Fixed
+            return;
+        }
+    }
     cout << "Enter a password: ";
     getline(cin, password);
 
@@ -362,46 +377,71 @@ public:
 };
 
 void savePatientsToFile(string filename, vector<Patient> &patients) {
-    ofstream file(filename); // Write
+    ofstream file(filename);
     for (Patient &patient : patients) {
-        file << patient.getId() << "|" << patient.getName() << "|" << patient.getAge() << "|" << patient.getGender() << "|" << patient.getBloodGroup() << "|" << patient.getAddress() << "|" << patient.getContact() << "|" << patient.getEmergencyContact() << "|" << patient.getDisease() << "|" << patient.getDoctorAssigned() << "\n";
+        file << "\"" << patient.getId() << "\","
+             << "\"" << patient.getName() << "\","
+             << "\"" << patient.getAge() << "\","
+             << "\"" << patient.getGender() << "\","
+             << "\"" << patient.getBloodGroup() << "\","
+             << "\"" << patient.getAddress() << "\","
+             << "\"" << patient.getContact() << "\","
+             << "\"" << patient.getEmergencyContact() << "\","
+             << "\"" << patient.getDisease() << "\","
+             << "\"" << patient.getDoctorAssigned() << "\"\n";
     }
 }
+
+// Helper Function
+vector<string> parseQuotedCSVLine(string &line) {
+    vector<string> result;
+    string part;
+    bool insideQuotes = false;
+
+    for (int i = 0; i < line.size(); i++) {
+        char c = line[i];
+
+        if (c == '"') {
+            insideQuotes = !insideQuotes;
+        } else if (c == ',' && !insideQuotes) {
+            result.push_back(part);
+            part.clear();
+        } else {
+            part += c;
+        }
+    }
+    result.push_back(part); // last part
+    return result;
+}
+
 
 vector<Patient> loadPatientsFromFile(string filename) {
     vector<Patient> patients;
-    ifstream file(filename); // read
+    ifstream file(filename);
     string line;
+
     while (getline(file, line)) {
-        stringstream ss(line);
-        string id, name, ageStr, gender, bloodGroup, address, contact, emergencyContact, disease, doctorAssigned;
-        getline(ss, id, '|');
-        getline(ss, name, '|');
-        getline(ss, ageStr, '|');
-        getline(ss, gender, '|');
-        getline(ss, bloodGroup, '|');
-        getline(ss, address, '|');
-        getline(ss, contact, '|');
-        getline(ss, emergencyContact, '|');
-        getline(ss, disease, '|');
-        getline(ss, doctorAssigned, '|');
+        vector<string> parts = parseQuotedCSVLine(line);
+        if (parts.size() != 10) continue; // skip malformed lines
 
         Patient patient;
-        patient.setId(id);
-        patient.setName(name);
-        patient.setAge(stoi(ageStr)); // string to integer
-        patient.setGender(gender);
-        patient.setBloodGroup(bloodGroup);
-        patient.setAddress(address);
-        patient.setContact(contact);
-        patient.setEmergencyContact(emergencyContact);
-        patient.setDisease(disease);
-        patient.setDoctorAssigned(doctorAssigned);
+        patient.setId(parts[0]);
+        patient.setName(parts[1]);
+        patient.setAge(stoi(parts[2]));
+        patient.setGender(parts[3]);
+        patient.setBloodGroup(parts[4]);
+        patient.setAddress(parts[5]);
+        patient.setContact(parts[6]);
+        patient.setEmergencyContact(parts[7]);
+        patient.setDisease(parts[8]);
+        patient.setDoctorAssigned(parts[9]);
 
         patients.push_back(patient);
     }
+
     return patients;
 }
+
 
 void patientManagement(vector<Patient> &patients) {
     int choice = 0;
@@ -652,7 +692,7 @@ void patientManagement(vector<Patient> &patients) {
 }
 
 class Doctor {
-    string id, name, specialization, contact, experience, availability;
+    string id, name, specialization, contact, experience, availability, degrees, institutions;
 public:
     void setId(string id) { 
         this->id = id;
@@ -668,12 +708,18 @@ public:
     string getAvailability() { return availability; }
     void setContact(string contact) { this->contact = contact; }
     string getContact() { return contact; }
+    void setDegrees(string degrees) { this->degrees = degrees; }
+    string getDegrees() { return degrees; }
+    void setInstitutions(string institutions) { this->institutions = institutions; }
+    string getInstitutions() { return institutions; }
 
     void viewDoctorDetails() {
         cout << "\n----------------------------------------" << endl;
         cout << "Doctor ID: " << id << endl;
         cout << "Name: " << name << endl;
         cout << "Specialization: " << specialization << endl;
+        cout << "Degrees: " << degrees << endl;
+        cout << "Institutions: " << institutions << endl;
         cout << "Experience: " << experience << " years" << endl;
         cout << "Available: " << (availability == "true" ? "Yes" : "No") << endl;
         cout << "Contact: " << contact << endl;
@@ -682,39 +728,45 @@ public:
 };
 
 void saveDoctorsToFile(string filename, vector<Doctor> &doctors) {
-    ofstream file(filename); // Write
+    ofstream file(filename);
     for (Doctor &doctor : doctors) {
-        file << doctor.getId() << "|" << doctor.getName() << "|" << doctor.getSpecialization() << "|" << doctor.getContact() << "|" << doctor.getExperience() << "|" << doctor.getAvailability() << "\n";
+        file << "\"" << doctor.getId() << "\","
+             << "\"" << doctor.getName() << "\","
+             << "\"" << doctor.getSpecialization() << "\","
+             << "\"" << doctor.getDegrees() << "\","
+             << "\"" << doctor.getInstitutions() << "\","
+             << "\"" << doctor.getContact() << "\","
+             << "\"" << doctor.getExperience() << "\","
+             << "\"" << doctor.getAvailability() << "\"\n";
     }
 }
+
 
 vector<Doctor> loadDoctorsFromFile(string filename) {
     vector<Doctor> doctors;
-    ifstream file(filename); // read
+    ifstream file(filename);
     string line;
+
     while (getline(file, line)) {
-        stringstream ss(line);
-        string id, name, specialization, contact, experience, availability;
-        getline(ss, id, '|');
-        getline(ss, name, '|');
-        getline(ss, specialization, '|');
-        getline(ss, contact, '|');
-        getline(ss, experience, '|');
-        getline(ss, availability);
+        vector<string> parts = parseQuotedCSVLine(line);
+        if (parts.size() != 8) continue; // skip if malformed
 
         Doctor doctor;
-        doctor.setId(id);
-        doctor.setName(name);
-        doctor.setSpecialization(specialization);
-        doctor.setContact(contact);
-        doctor.setExperience(experience);
-        doctor.setAvailability(availability);
-
+        doctor.setId(parts[0]);
+        doctor.setName(parts[1]);
+        doctor.setSpecialization(parts[2]);
+        doctor.setDegrees(parts[3]);
+        doctor.setInstitutions(parts[4]);
+        doctor.setContact(parts[5]);
+        doctor.setExperience(parts[6]);
+        doctor.setAvailability(parts[7]);
 
         doctors.push_back(doctor);
     }
+
     return doctors;
 }
+
 
 void doctorManagement(vector<Doctor> &doctors) {
     int choice = 0;
@@ -740,7 +792,7 @@ void doctorManagement(vector<Doctor> &doctors) {
                 cout << "----------------------------------------" << endl;
                 cout << "Enter Doctor Details:" << endl << endl;
                 Doctor d;
-                string id, name, specialization, contact, experience, availability;
+                string id, name, specialization, degrees, institutions, contact, experience, availability;
                 cout << "Enter Doctor ID: ";
                 cin >> id;
                 cout << "Enter Name: ";
@@ -748,6 +800,10 @@ void doctorManagement(vector<Doctor> &doctors) {
                 getline(cin, name);
                 cout << "Enter Specialization: ";
                 getline(cin, specialization);
+                cout << "Enter Degrees: ";
+                getline(cin, degrees);
+                cout << "Enter Institutions: ";
+                getline(cin, institutions);
                 cout << "Enter Experience: ";
                 cin >> experience;
                 cout << "Enter Contact: ";
@@ -759,6 +815,8 @@ void doctorManagement(vector<Doctor> &doctors) {
                 d.setId(id);
                 d.setName(name);
                 d.setSpecialization(specialization);
+                d.setDegrees(degrees);
+                d.setInstitutions(institutions);
                 d.setExperience(experience);
                 d.setAvailability(availability);
                 d.setContact(contact);
@@ -803,14 +861,16 @@ void doctorManagement(vector<Doctor> &doctors) {
                 bool found = false;
                 for (Doctor &d : doctors) {
                     if (d.getId() == id) {
-                        string id, name, specialization, contact, experience, availability;
+                        string id, name, specialization, degrees, institutions, contact, experience, availability;
                         cout << "What do you want to update?" << endl;
                         cout << "1. Update Doctor Name" << endl;
                         cout << "2. Update Doctor Specialization" << endl;
-                        cout << "3. Update Doctor Experience" << endl;
-                        cout << "4. Update Doctor Contact" << endl;
-                        cout << "5. Update Doctor Availability" << endl;
-                        cout << "6. Go Back" << endl;
+                        cout << "3. Update Doctor Degrees" << endl;
+                        cout << "4. Update Doctor Institutions" << endl;
+                        cout << "5. Update Doctor Experience" << endl;
+                        cout << "6. Update Doctor Contact" << endl;
+                        cout << "7. Update Doctor Availability" << endl;
+                        cout << "8. Go Back" << endl;
                         int update;
                         cout << "Enter Your Choice: ";
                         cin >> update;
@@ -830,24 +890,36 @@ void doctorManagement(vector<Doctor> &doctors) {
                                 break;
 
                             case 3:
+                                cout << "Enter New Degrees: ";
+                                getline(cin, degrees);
+                                d.setDegrees(degrees);
+                                break;
+
+                            case 4:
+                                cout << "Enter New Institutions: ";
+                                getline(cin, institutions);
+                                d.setInstitutions(institutions);
+                                break;
+
+                            case 5:
                                 cout << "Enter New Experience: ";
                                 cin >> experience;
                                 d.setExperience(experience);
                                 break;
 
-                            case 4:
+                            case 6:
                                 cout << "Enter New Contact: ";
                                 getline(cin, contact);
                                 d.setContact(contact);
                                 break;
 
-                            case 5:
+                            case 7:
                                 cout << "Enter New Availability: ";
                                 cin >> availability;
                                 d.setAvailability(availability);
                                 break;
 
-                            case 6:
+                            case 8:
                                 loader("Going Back");
                                 break;
                             
@@ -992,7 +1064,7 @@ void adminManagement(vector<User> &users) {
                 for (User &user : users) {
                     cout << "Name: " << user.getName() << endl;
                     cout << "Username: " << user.getUsername() << endl;
-                    cout << "Status: " << (user.getIsLocked() ? "Locked" : "Active") << endl;
+                    cout << "Status: " << (user.getIsLocked() ? "Disabled" : "Active") << endl; // fixed
                     cout << "----------------------------------------" << endl;
                 }
                 pauseWithMessage("Press Enter to continue...");
@@ -1349,7 +1421,7 @@ void dashboard(vector<User> &users) {
                 cout << "Invalid choice! Try again." << endl;
                 pauseWithMessage("Press Enter to retry");
         }
-        if (choice != 1 && choice != 8 && choice != 5 && choice != 6) {
+        if (choice != 1 && choice != 2 && choice != 8 && choice != 5 && choice != 6) {
             getchar();
         }
     }
