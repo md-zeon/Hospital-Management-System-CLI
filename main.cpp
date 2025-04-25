@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <limits>
 #include <fstream> // i used it for file handling
 #include <sstream> // i used it for stringstreem it's okay if you don't know about it I will explain later or you can search it in google
 #include <windows.h> // i used it for Sleep() and system("cls") function
@@ -18,21 +19,19 @@ void loader(string msg) {
 }
 
 void pauseWithMessage(string msg) {
-    cout << endl; 
-    cout << msg;
-    cin.ignore();
-    getchar(); // for enter 
+    cout << endl << msg;
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+    // No getchar() needed! cin.ignore() already waits for Enter if buffer is empty.
 }
 
-void validChoice(int &choice) { // 'f'
-    if (choice > 0) {
-        return;
-    } else {
-        cout << "Please Enter a Valid Number" << endl;
-        cin.clear(); // to remove
-        cin.ignore(); // \n
-        choice = 100;
+void validChoice(int &choice) {
+    while (choice <= 0 || cin.fail()) {
+        cout << "Please enter a valid number: ";
+        cin.clear();             // Clear error flag on the cin stream
+        cin.ignore(1000, '\n');  // Discard invalid input from buffer
+        cin >> choice;           // Try to get valid input again
     }
+    cin.ignore(); // <- This helps when a string (with getline) follows
 }
 
 class User {
@@ -290,7 +289,7 @@ void registerUser(vector<User> &users) {
     for (User &user : users) {
         if (user.getUsername() == username) {
             cout << "User Already Exist! Please use another username :)" << endl;
-            pauseWithMessage("Hit Enter To Proceed"); // Fixed
+            pauseWithMessage("Hit Enter To Proceed");
             return;
         }
     }
@@ -458,7 +457,6 @@ void patientManagement(vector<Patient> &patients) {
         cout << "6. Back to Main Menu" << endl;
         cout << "Enter your choice: ";
         cin >> choice;
-        cin.ignore();
         validChoice(choice);
         switch (choice) {
             case 1: {
@@ -517,6 +515,7 @@ void patientManagement(vector<Patient> &patients) {
                 string id;
                 cout << "Enter Patient ID: ";
                 cin >> id;
+                cin.ignore();
                 bool found = false;
                 loader("Searching");
                 for (Patient &p : patients) {
@@ -558,7 +557,6 @@ void patientManagement(vector<Patient> &patients) {
                         int update;
                         cout << "Enter Your Choice: ";
                         cin >> update;
-                        cin.ignore();
                         validChoice(update);
                         switch (update) {
                             case 1:
@@ -571,17 +569,18 @@ void patientManagement(vector<Patient> &patients) {
                                 cout << "Enter New Age: ";
                                 cin >> age;
                                 p.setAge(age);
+                                cin.ignore();
                                 break;
 
                             case 3:
                                 cout << "Enter New Gender (M/F): ";
-                                cin >> gender;
+                                getline(cin, gender);
                                 p.setGender(gender);
                                 break;
 
                             case 4:
                                 cout << "Enter New Blood Group: ";
-                                cin >> bloodGroup;
+                                getline(cin, bloodGroup);
                                 p.setBloodGroup(bloodGroup);
                                 break;
 
@@ -593,13 +592,13 @@ void patientManagement(vector<Patient> &patients) {
 
                             case 6:
                                 cout << "Enter New Contact: ";
-                                cin >> contact;
+                                getline(cin, contact);
                                 p.setContact(contact);
                                 break;
 
                             case 7:
                                 cout << "Enter New Emergency Contact: ";
-                                cin >> emergencyContact;
+                                getline(cin, emergencyContact);
                                 p.setEmergencyContact(emergencyContact);
                                 break;
                             
@@ -616,8 +615,8 @@ void patientManagement(vector<Patient> &patients) {
                                 break;
                             
                             default:
-                            cout << "Invalid choice! Try again." << endl;
-                            pauseWithMessage("Press Enter to retry");
+                                cout << "Invalid choice! Try again." << endl;
+                                pauseWithMessage("Press Enter to retry");
                         }
 
                         loader("Updating");
@@ -639,6 +638,7 @@ void patientManagement(vector<Patient> &patients) {
                 cout << "----------------------------------------" << endl;
                 string id;
                 cout << "Enter Patient ID to Delete: "; cin >> id;
+                cin.ignore();
                 bool found = false;
                 for (auto it = patients.begin(); it != patients.end(); it++) {
                     if (it->getId() == id) {
@@ -662,7 +662,7 @@ void patientManagement(vector<Patient> &patients) {
                 cout << "----------------------------------------" << endl;
                 string masterKey;
                 cout << "Enter MASTER KEY: ";
-                cin >> masterKey;
+                getline(cin, masterKey);
                 if (masterKey == MASTER_KEY) {
                     cout << "Verification Successful" << endl;
                     loader("Fetching Data");
@@ -783,7 +783,6 @@ void doctorManagement(vector<Doctor> &doctors) {
         cout << "6. Back to Main Menu" << endl;
         cout << "Enter your choice: ";
         cin >> choice;
-        cin.ignore();
         validChoice(choice);
         switch (choice) {
             case 1: {
@@ -811,7 +810,7 @@ void doctorManagement(vector<Doctor> &doctors) {
                 getline(cin, contact);
                 cout << "Is Available(true/false): ";
                 cin >> availability;
-
+                cin.ignore();
                 d.setId(id);
                 d.setName(name);
                 d.setSpecialization(specialization);
@@ -835,6 +834,7 @@ void doctorManagement(vector<Doctor> &doctors) {
                 string id;
                 cout << "Enter DOCTOR ID: ";
                 cin >> id;
+                cin.ignore();
                 bool found = false;
                 loader("Searching");
                 for (Doctor &d : doctors) {
@@ -858,6 +858,7 @@ void doctorManagement(vector<Doctor> &doctors) {
                 string id;
                 cout << "Enter Doctor ID: ";
                 cin >> id;
+                cin.ignore();
                 bool found = false;
                 for (Doctor &d : doctors) {
                     if (d.getId() == id) {
@@ -874,7 +875,6 @@ void doctorManagement(vector<Doctor> &doctors) {
                         int update;
                         cout << "Enter Your Choice: ";
                         cin >> update;
-                        cin.ignore();
                         validChoice(update);
                         switch (update) {
                             case 1:
@@ -904,6 +904,7 @@ void doctorManagement(vector<Doctor> &doctors) {
                             case 5:
                                 cout << "Enter New Experience: ";
                                 cin >> experience;
+                                cin.ignore();
                                 d.setExperience(experience);
                                 break;
 
@@ -915,7 +916,7 @@ void doctorManagement(vector<Doctor> &doctors) {
 
                             case 7:
                                 cout << "Enter New Availability: ";
-                                cin >> availability;
+                                getline(cin, availability);
                                 d.setAvailability(availability);
                                 break;
 
@@ -928,10 +929,10 @@ void doctorManagement(vector<Doctor> &doctors) {
                                 pauseWithMessage("Press Enter to retry");
                         }
 
-                        if (update != 6) {
+                        if (update != 8) {
                             loader("Updating");
                             saveDoctorsToFile("doctors.csv", doctors); // Save to file
-                            cout << "Patient Information Updated Successfully!" << endl;
+                            cout << "Doctor Information Updated Successfully!" << endl;
                         }
                         found = true;
                         break;
@@ -949,6 +950,7 @@ void doctorManagement(vector<Doctor> &doctors) {
                 cout << "----------------------------------------" << endl;
                 string id;
                 cout << "Enter Doctor ID to Delete: "; cin >> id;
+                cin.ignore();
                 bool found = false;
                 for (auto it = doctors.begin(); it != doctors.end(); it++) {
                     if (it->getId() == id) {
@@ -972,7 +974,7 @@ void doctorManagement(vector<Doctor> &doctors) {
                 cout << "----------------------------------------" << endl;
                 string masterKey;
                 cout << "Enter MASTER KEY: ";
-                cin >> masterKey;
+                getline(cin, masterKey);
                 if (masterKey == MASTER_KEY) {
                     cout << "Verification Successful" << endl;
                     loader("Fetching Data");
@@ -1036,7 +1038,7 @@ void adminManagement(vector<User> &users) {
         cout << "5. Back to Main Menu" << endl;
         cout << "Enter your choice: ";
         cin >> choice;
-        cin.ignore();
+        validChoice(choice);
 
         switch (choice) {
             case 1: {
@@ -1157,7 +1159,6 @@ void staffManagement(vector<Staff> &staffs) {
         cout << "6. Back to Main Menu" << endl;
         cout << "Enter your choice: ";
         cin >> choice;
-        cin.ignore();
         validChoice(choice);
         switch (choice) {
             case 1: {
@@ -1204,6 +1205,7 @@ void staffManagement(vector<Staff> &staffs) {
                 string id;
                 cout << "Enter Staff ID: ";
                 cin >> id;
+                cin.ignore();
                 bool found = false;
                 loader("Searching");
                 for (Staff &s : staffs) {
@@ -1241,7 +1243,6 @@ void staffManagement(vector<Staff> &staffs) {
                         int update;
                         cout << "Enter Your Choice: ";
                         cin >> update;
-                        cin.ignore();
                         validChoice(update);
                         switch (update) {
                             case 1:
@@ -1252,19 +1253,19 @@ void staffManagement(vector<Staff> &staffs) {
 
                             case 2:
                                 cout << "Enter New Role: ";
-                                cin >> role;
+                                getline(cin, role);
                                 s.setRole(role);
                                 break;
 
                             case 3:
                                 cout << "Enter New Shift(Day/Night)";
-                                cin >> shift;
+                                getline(cin, shift);
                                 s.setShift(shift);
                                 break;
 
                             case 4:
                                 cout << "Enter New Salary";
-                                cin >> salary;
+                                getline(cin, salary);
                                 s.setSalary(salary);
                                 break;
 
@@ -1279,8 +1280,8 @@ void staffManagement(vector<Staff> &staffs) {
                                 break;
                             
                             default:
-                            cout << "Invalid choice! Try again." << endl;
-                            pauseWithMessage("Press Enter to retry");
+                                cout << "Invalid choice! Try again." << endl;
+                                pauseWithMessage("Press Enter to retry");
                         }
 
                         if (update != 6) {
@@ -1306,6 +1307,7 @@ void staffManagement(vector<Staff> &staffs) {
                 cout << "----------------------------------------" << endl;
                 string id;
                 cout << "Enter Staff ID to Remove: "; cin >> id;
+                cin.ignore();
                 bool found = false;
                 for (auto it = staffs.begin(); it != staffs.end(); it++) {
                     if (it->getId() == id) {
@@ -1329,7 +1331,7 @@ void staffManagement(vector<Staff> &staffs) {
                 cout << "----------------------------------------" << endl;
                 string masterKey;
                 cout << "Enter MASTER KEY: ";
-                cin >> masterKey;
+                getline(cin, masterKey);
                 if (masterKey == MASTER_KEY) {
                     cout << "Verification Successful" << endl;
                     loader("Fetching Data");
@@ -1362,8 +1364,6 @@ void dashboard(vector<User> &users) {
     vector<Patient> patients = loadPatientsFromFile("patients.csv");
     vector<Doctor> doctors = loadDoctorsFromFile("doctors.csv");
     // vector<Appointment> appointments;
-    // vector<Bill> bills;
-    // vector<MedicalRecord> records;
     // vector<Medicine> medicines;
     vector<Staff> staffs = loadStaffsFromFile("staffs.csv");
 
@@ -1380,11 +1380,9 @@ void dashboard(vector<User> &users) {
         cout << "4. Pharmacy & Inventory" << endl;
         cout << "5. Admin Management" << endl;
         cout << "6. Staff Management" << endl;
-        cout << "7. Reports & Statistics" << endl;
-        cout << "8. Logout" << endl;
+        cout << "7. Logout" << endl;
         cout << "Enter your choice: ";
         cin >> choice;
-        cin.ignore(); // '\n'
         validChoice(choice);
         switch (choice) {
             case 1:
@@ -1408,10 +1406,6 @@ void dashboard(vector<User> &users) {
                 staffManagement(staffs);
                 break;
             case 7:
-                cout << "Development in Progress" << endl;
-                // reportsManagement(patients, doctors, bills);
-                break;
-            case 8:
                 system("cls");
                 if(logout()) {
                     isLogout = true;
@@ -1421,7 +1415,7 @@ void dashboard(vector<User> &users) {
                 cout << "Invalid choice! Try again." << endl;
                 pauseWithMessage("Press Enter to retry");
         }
-        if (choice != 1 && choice != 2 && choice != 8 && choice != 5 && choice != 6) {
+        if (choice != 1 && choice != 2 && choice != 7 && choice != 5 && choice != 6) {
             getchar();
         }
     }
@@ -1439,7 +1433,7 @@ void initialMenu(vector<User> &users) {
         cout << "3. Exit" << endl;
         cout << "Enter your choice: ";
         cin >> choice;
-        cin.ignore();
+        validChoice(choice);
         switch (choice) {
             case 1:
                 registerUser(users);
