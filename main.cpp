@@ -9,6 +9,14 @@ using namespace std;
 
 const string MASTER_KEY = "ADMIN@1234";
 
+int safeStoi(const string& str) {
+    try {
+        return stoi(str);
+    } catch (...) {
+        return 0; // Return default value if conversion fails
+    }
+}
+
 void loader(string msg) {
     cout << msg;
     for(int i = 0; i < 3; i++) {
@@ -177,7 +185,7 @@ vector<User> loadUsersFromFile(string filename) {
         user.setUsername(username);
         user.setPassword(password);
         user.setIsLocked(locked == "1");
-        user.setAttempts(stoi(attemptsStr)); // Set attempts from file string to integer "3" = 3
+        user.setAttempts(safeStoi(attemptsStr)); // Set attempts from file string to integer "3" = 3
         users.push_back(user);
     }
     return users;
@@ -376,7 +384,7 @@ public:
 };
 
 void savePatientsToFile(string filename, vector<Patient> &patients) {
-    ofstream file(filename);
+    ofstream file(filename); // write
     for (Patient &patient : patients) {
         file << "\"" << patient.getId() << "\","
              << "\"" << patient.getName() << "\","
@@ -413,7 +421,6 @@ vector<string> parseQuotedCSVLine(string &line) {
     return result;
 }
 
-
 vector<Patient> loadPatientsFromFile(string filename) {
     vector<Patient> patients;
     ifstream file(filename);
@@ -426,7 +433,7 @@ vector<Patient> loadPatientsFromFile(string filename) {
         Patient patient;
         patient.setId(parts[0]);
         patient.setName(parts[1]);
-        patient.setAge(stoi(parts[2]));
+        patient.setAge(safeStoi(parts[2]));
         patient.setGender(parts[3]);
         patient.setBloodGroup(parts[4]);
         patient.setAddress(parts[5]);
@@ -440,7 +447,6 @@ vector<Patient> loadPatientsFromFile(string filename) {
 
     return patients;
 }
-
 
 void patientManagement(vector<Patient> &patients) {
     int choice = 0;
@@ -542,6 +548,7 @@ void patientManagement(vector<Patient> &patients) {
                 bool found = false;
                 for (Patient &p : patients) {
                     if (p.getId() == id) {
+                        p.viewPatientDetails();
                         string name, gender, bloodGroup, address, contact, emergencyContact, disease, doctorAssigned;
                         int age;
                         cout << "What do you want to update?" << endl;
@@ -555,7 +562,6 @@ void patientManagement(vector<Patient> &patients) {
                         cout << "8. Update Patient Disease/Symptoms" << endl;
                         cout << "9. Update Patient Doctor Assigned" << endl;
                         int update;
-                        cout << "Enter Your Choice: ";
                         cin >> update;
                         validChoice(update);
                         switch (update) {
@@ -741,7 +747,6 @@ void saveDoctorsToFile(string filename, vector<Doctor> &doctors) {
     }
 }
 
-
 vector<Doctor> loadDoctorsFromFile(string filename) {
     vector<Doctor> doctors;
     ifstream file(filename);
@@ -766,7 +771,6 @@ vector<Doctor> loadDoctorsFromFile(string filename) {
 
     return doctors;
 }
-
 
 void doctorManagement(vector<Doctor> &doctors) {
     int choice = 0;
@@ -1082,6 +1086,679 @@ void adminManagement(vector<User> &users) {
     }
 }
 
+class Appointment {
+    string appointmentId, patientId, doctorId, date, time, status;
+public:
+    void setAppointmentId(string id) { appointmentId = id; }
+    string getAppointmentId() { return appointmentId; }
+    void setPatientId(string id) { patientId = id; }
+    string getPatientId() { return patientId; }
+    void setDoctorId(string id) { doctorId = id; }
+    string getDoctorId() { return doctorId; }
+    void setDate(string d) { date = d; }
+    string getDate() { return date; }
+    void setTime(string t) { time = t; }
+    string getTime() { return time; }
+    void setStatus(string s) { status = s; }
+    string getStatus() { return status; }
+
+    void viewAppointmentDetails(vector<Patient>& patients, vector<Doctor>& doctors) {
+        string patientName = "Unknown", doctorName = "Unknown";
+        
+        // Find patient name
+        for (Patient &p : patients) {
+            if (p.getId() == patientId) {
+                patientName = p.getName();
+                break;
+            }
+        }
+        
+        // Find doctor name
+        for (Doctor &d : doctors) {
+            if (d.getId() == doctorId) {
+                doctorName = d.getName();
+                break;
+            }
+        }
+        
+        cout << "\n----------------------------------------" << endl;
+        cout << "Appointment ID: " << appointmentId << endl;
+        cout << "Patient: " << patientName << " (" << patientId << ")" << endl;
+        cout << "Doctor: " << doctorName << " (" << doctorId << ")" << endl;
+        cout << "Date: " << date << endl;
+        cout << "Time: " << time << endl;
+        cout << "Status: " << status << endl;
+        cout << "----------------------------------------" << endl;
+    }
+};
+
+void saveAppointmentsToFile(string filename, vector<Appointment> &appointments) {
+    ofstream file(filename);
+    for (Appointment &app : appointments) {
+        file << "\"" << app.getAppointmentId() << "\","
+             << "\"" << app.getPatientId() << "\","
+             << "\"" << app.getDoctorId() << "\","
+             << "\"" << app.getDate() << "\","
+             << "\"" << app.getTime() << "\","
+             << "\"" << app.getStatus() << "\"\n";
+    }
+}
+
+vector<Appointment> loadAppointmentsFromFile(string filename) {
+    vector<Appointment> appointments;
+    ifstream file(filename);
+    string line;
+    
+    while (getline(file, line)) {
+        vector<string> parts = parseQuotedCSVLine(line);
+        if (parts.size() != 6) continue; // skip malformed lines
+        
+        Appointment app;
+        app.setAppointmentId(parts[0]);
+        app.setPatientId(parts[1]);
+        app.setDoctorId(parts[2]);
+        app.setDate(parts[3]);
+        app.setTime(parts[4]);
+        app.setStatus(parts[5]);
+        
+        appointments.push_back(app);
+    }
+    return appointments;
+}
+
+bool isDoctorAvailable(vector<Appointment>& appointments, string doctorId, string date, string time) {
+    for (Appointment &app : appointments) {
+        if (app.getDoctorId() == doctorId && app.getDate() == date && 
+            app.getTime() == time && app.getStatus() != "Cancelled") {
+            return false;
+        }
+    }
+    return true;
+}
+
+void scheduleAppointment(vector<Appointment>& appointments, vector<Patient>& patients, vector<Doctor>& doctors) {
+    system("cls");
+    cout << "----------------------------------------" << endl;
+    cout << "        SCHEDULE NEW APPOINTMENT       " << endl;
+    cout << "----------------------------------------" << endl;
+    
+    string patientId, doctorId;
+    cout << "Enter Patient ID: ";
+    cin >> patientId;
+    cin.ignore();
+    
+    // Check if patient exists
+    bool patientExists = false;
+    for (Patient &p : patients) {
+        if (p.getId() == patientId) {
+            patientExists = true;
+            break;
+        }
+    }
+    
+    if (!patientExists) {
+        cout << "Error: Patient ID not found!" << endl;
+        pauseWithMessage("Press Enter to go back...");
+        return;
+    }
+    
+    cout << "Enter Doctor ID: ";
+    cin >> doctorId;
+    cin.ignore();
+    
+    // Check if doctor exists
+    bool doctorExists = false;
+    for (Doctor &d : doctors) {
+        if (d.getId() == doctorId) {
+            doctorExists = true;
+            break;
+        }
+    }
+    
+    if (!doctorExists) {
+        cout << "Error: Doctor ID not found!" << endl;
+        pauseWithMessage("Press Enter to go back...");
+        return;
+    }
+    
+    string date;
+    cout << "Enter Date (YYYY-MM-DD): ";
+    getline(cin, date);
+    
+    // Show available time slots
+    vector<string> timeSlots = {"09:00 AM", "10:00 AM", "11:00 AM", "12:00 PM", 
+                               "02:00 PM", "03:00 PM", "04:00 PM"};
+    vector<string> availableSlots;
+    
+    for (string slot : timeSlots) {
+        if (isDoctorAvailable(appointments, doctorId, date, slot)) {
+            availableSlots.push_back(slot);
+        }
+    }
+    
+    if (availableSlots.empty()) {
+        cout << "No available slots for this doctor on " << date << endl;
+        pauseWithMessage("Press Enter to go back...");
+        return;
+    }
+    
+    cout << "\nAvailable Slots:" << endl;
+    for (int i = 0; i < availableSlots.size(); i++) {
+        cout << i+1 << ". " << availableSlots[i] << endl;
+    }
+    
+    int slotChoice;
+    cout << "Select Slot (1-" << availableSlots.size() << "): ";
+    cin >> slotChoice;
+    cin.ignore();
+    
+    if (slotChoice < 1 || slotChoice > availableSlots.size()) {
+        cout << "Invalid slot selection!" << endl;
+        pauseWithMessage("Press Enter to go back...");
+        return;
+    }
+    
+    string time = availableSlots[slotChoice-1];
+    
+    // Change Start
+    cout<<"Enter appointment id : ";
+    string appointmentId;
+    getline(cin,appointmentId);
+    bool duplicateId = false;
+    for (Appointment &app: appointments) {
+        if (app.getAppointmentId() == appointmentId) {
+            duplicateId = true;
+            break;
+        }
+    }
+
+    if(duplicateId) {
+        cout << "Appointment ID already Exist!" << endl;
+        pauseWithMessage("Press Enter to go back...");
+        return;
+    }
+
+    // Change End
+    
+    Appointment newApp;
+    newApp.setAppointmentId(appointmentId);
+    newApp.setPatientId(patientId);
+    newApp.setDoctorId(doctorId);
+    newApp.setDate(date);
+    newApp.setTime(time);
+    newApp.setStatus("Scheduled");
+    
+    appointments.push_back(newApp);
+    loader("Scheduling appointment");
+    saveAppointmentsToFile("appointments.csv", appointments);
+    
+    cout << "\nAppointment Scheduled Successfully!" << endl;
+    cout << "----------------------------------------" << endl;
+    cout << "Appointment ID: " << appointmentId << endl;
+    cout << "Patient: " << patientId << endl;
+    cout << "Doctor: " << doctorId << endl;
+    cout << "Date: " << date << endl;
+    cout << "Time: " << time << endl;
+    cout << "----------------------------------------" << endl;
+    
+    pauseWithMessage("Press Enter to continue...");
+}
+
+void viewUpcomingAppointments(vector<Appointment>& appointments, vector<Patient>& patients, vector<Doctor>& doctors) {
+    system("cls");
+    cout << "----------------------------------------" << endl;
+    cout << "        UPCOMING APPOINTMENTS           " << endl;
+    cout << "----------------------------------------" << endl;
+    
+    if (appointments.empty()) {
+        cout << "No appointments found!" << endl;
+        pauseWithMessage("Press Enter to go back...");
+        return;
+    }
+    
+    bool found = false;
+    cout << "Appointment ID  Patient      Doctor        Date       Time      " << endl;
+    cout << "--------------------------------------------------------------" << endl;
+    
+    for (Appointment &app : appointments) {
+        if (app.getStatus() == "Scheduled") {
+            found = true;
+            
+            string patientName = "Unknown", doctorName = "Unknown";
+            for (Patient &p : patients) {
+                if (p.getId() == app.getPatientId()) {
+                    patientName = p.getName();
+                    break;
+                }
+            }
+            
+            for (Doctor &d : doctors) {
+                if (d.getId() == app.getDoctorId()) {
+                    doctorName = d.getName();
+                    break;
+                }
+            }
+            
+            // Format output in columns
+            printf("%-15s %-12s %-12s %-10s %-8s\n", 
+                   app.getAppointmentId().c_str(),
+                   patientName.substr(0, 10).c_str(),
+                   doctorName.substr(0, 10).c_str(),
+                   app.getDate().c_str(),
+                   app.getTime().c_str());
+        }
+    }
+    
+    if (!found) {
+        cout << "No upcoming appointments found!" << endl;
+    }
+    
+    pauseWithMessage("\nPress Enter to continue...");
+}
+
+void cancelAppointment(vector<Appointment>& appointments) {
+    system("cls");
+    cout << "----------------------------------------" << endl;
+    cout << "         CANCEL APPOINTMENT             " << endl;
+    cout << "----------------------------------------" << endl;
+    
+    string appointmentId;
+    cout << "Enter Appointment ID: ";
+    cin >> appointmentId;
+    cin.ignore();
+    
+    bool found = false;
+    for (Appointment &app : appointments) {
+        if (app.getAppointmentId() == appointmentId) {
+            found = true;
+            
+            if (app.getStatus() == "Cancelled") {
+                cout << "This appointment is already cancelled!" << endl;
+                pauseWithMessage("Press Enter to continue...");
+                return;
+            }
+            
+            cout << "Warning: Are you sure you want to cancel this appointment? (Y/N): ";
+            char confirm;
+            cin >> confirm;
+            cin.ignore();
+            
+            if (confirm == 'Y' || confirm == 'y') {
+                loader("Cancelling");
+                app.setStatus("Cancelled");
+                saveAppointmentsToFile("appointments.csv", appointments);
+                cout << "Appointment cancelled successfully!" << endl;
+            } else {
+                cout << "Cancellation aborted." << endl;
+            }
+            
+            break;
+        }
+    }
+    
+    if (!found) {
+        cout << "Error: Appointment ID not found!" << endl;
+    }
+    
+    pauseWithMessage("Press Enter to continue...");
+}
+
+void appointmentManagement(vector<Appointment>& appointments, vector<Patient>& patients, vector<Doctor>& doctors) {
+    int choice = 0;
+    while (choice != 4) {
+        system("cls");
+        cout << "========================================" << endl;
+        cout << "        APPOINTMENT MANAGEMENT          " << endl;
+        cout << "========================================" << endl;
+        cout << "1.  Schedule New Appointment" << endl;
+        cout << "2.  View Upcoming Appointments" << endl;
+        cout << "3.  Cancel Appointment" << endl;
+        cout << "4.  Back to Main Menu" << endl;
+        cout << "Enter your choice: ";
+        cin >> choice;
+        validChoice(choice);
+        
+        switch (choice) {
+            case 1:
+                scheduleAppointment(appointments, patients, doctors);
+                break;
+            case 2:
+                viewUpcomingAppointments(appointments, patients, doctors);
+                break;
+            case 3:
+                cancelAppointment(appointments);
+                break;
+            case 4:
+                loader("Returning to Main Menu");
+                break;
+            default:
+                cout << "Invalid choice! Try again." << endl;
+                pauseWithMessage("Press Enter to retry");
+        }
+    }
+}
+
+class Medicine {
+    string id, name, expiryDate;
+    int quantity;
+    double price;
+public:
+    void setId(string id) { this->id = id; }
+    string getId() { return id; }
+    void setName(string name) { this->name = name; }
+    string getName() { return name; }
+    void setExpiryDate(string expiryDate) { this->expiryDate = expiryDate; }
+    string getExpiryDate() { return expiryDate; }
+    void setQuantity(int quantity) { this->quantity = quantity; }
+    int getQuantity() { return quantity; }
+    void setPrice(double price) { this->price = price; }
+    double getPrice() { return price; }
+
+    void viewMedicineDetails() {
+        cout << "\n----------------------------------------" << endl;
+        cout << "Medicine ID: " << id << endl;
+        cout << "Name: " << name << endl;
+        cout << "Quantity: " << quantity << endl;
+        printf("Price: %.2f\n", price);
+        cout << "Expiry Date: " << expiryDate << endl;
+        cout << "----------------------------------------" << endl;
+    }
+};
+
+void saveMedicinesToFile(string filename, vector<Medicine> &medicines) {
+    ofstream file(filename);
+    for (Medicine &med : medicines) {
+        file << med.getId() << "," 
+             << med.getName() << ","
+             << med.getQuantity() << ","
+             << med.getPrice() << ","
+             << med.getExpiryDate() << "\n";
+    }
+}
+
+vector<Medicine> loadMedicinesFromFile(string filename) {
+    vector<Medicine> medicines;
+    ifstream file(filename);
+    string line;
+
+    while (getline(file, line)) {
+        stringstream ss(line);
+        string id, name, quantityStr, priceStr, expiryDate;
+        
+        getline(ss, id, ',');
+        getline(ss, name, ',');
+        getline(ss, quantityStr, ',');
+        getline(ss, priceStr, ',');
+        getline(ss, expiryDate);
+
+        Medicine med;
+        med.setId(id);
+        med.setName(name);
+        med.setQuantity(safeStoi(quantityStr));
+        med.setPrice(stod(priceStr));
+        med.setExpiryDate(expiryDate);
+
+        medicines.push_back(med);
+    }
+    return medicines;
+}
+
+void viewMedicineStock(vector<Medicine> &medicines) {
+    system("cls");
+    cout << "----------------------------------------" << endl;
+    cout << "         MEDICINE STOCK              " << endl;
+    cout << "----------------------------------------" << endl;
+    
+    if (medicines.empty()) {
+        cout << " No medicine in stock!" << endl;
+        pauseWithMessage("Press any key to go back...");
+        return;
+    }
+
+    loader("Fetching inventory details"); // changed
+    cout << "----------------------------------------" << endl;
+    cout << "ID      Name              Quantity   Price   Expiry Date" << endl;
+    cout << "--------------------------------------------------------" << endl;
+    
+    for (Medicine &med : medicines) {
+        printf("%-8s%-18s%-10d$%-8.2f%s\n", 
+               med.getId().c_str(),
+               med.getName().c_str(),
+               med.getQuantity(),
+               med.getPrice(),
+               med.getExpiryDate().c_str());
+    }
+    
+    pauseWithMessage("\nPress any key to continue...");
+}
+
+void addNewMedicine(vector<Medicine> &medicines) {
+    system("cls");
+    cout << "----------------------------------------" << endl;
+    cout << "         ADD NEW MEDICINE             " << endl;
+    cout << "----------------------------------------" << endl;
+    
+    Medicine newMed;
+    string id, name, expiryDate;
+    int quantity;
+    double price;
+    
+    cout << "Enter Medicine ID: ";
+    cin >> id;
+    cin.ignore();
+    
+    // Check if medicine ID already exists
+    for (Medicine &med : medicines) {
+        if (med.getId() == id) {
+            cout << "Error: Medicine ID already exists!" << endl;
+            pauseWithMessage("Press any key to go back...");
+            return;
+        }
+    }
+    
+    cout << "Enter Medicine Name: ";
+    // cin.ignore();
+    getline(cin, name);
+    cout << "Enter Quantity: ";
+    cin >> quantity;
+    cout << "Enter Price: ";
+    cin >> price;
+    cout << "Enter Expiry Date (YYYY-MM-DD): ";
+    cin >> expiryDate;
+    cin.ignore(); // added
+    
+    newMed.setId(id);
+    newMed.setName(name);
+    newMed.setQuantity(quantity);
+    newMed.setPrice(price);
+    newMed.setExpiryDate(expiryDate);
+    medicines.push_back(newMed);
+    
+    saveMedicinesToFile("medicines.csv", medicines);
+    loader("Adding medicine");
+    
+    cout << "\n Medicine Added Successfully!" << endl;
+    cout << " Medicine ID: " << id << endl;
+    cout << " Name: " << name << endl;
+    cout << " Quantity: " << quantity << endl;
+    printf(" Price: $%.2f\n", price);
+    cout << " Expiry Date: " << expiryDate << endl;
+    
+    pauseWithMessage("\nPress any key to continue...");
+}
+
+void updateMedicineDetails(vector<Medicine> &medicines) {
+    system("cls");
+    cout << "----------------------------------------" << endl;
+    cout << "         UPDATE MEDICINE DETAILS      " << endl;
+    cout << "----------------------------------------" << endl;
+    
+    string id;
+    cout << "Enter Medicine ID: ";
+    cin >> id;
+    cin.ignore();
+    
+    bool found = false;
+    for (Medicine &med : medicines) {
+        if (med.getId() == id) {
+            found = true;
+            loader("Fetching medicine details");
+            
+            cout << "\n----------------------------------------" << endl;
+            cout << " Medicine ID: " << med.getId() << endl;
+            cout << " Name: " << med.getName() << endl;
+            cout << " Quantity: " << med.getQuantity() << endl;
+            printf(" Price: $%.2f\n", med.getPrice());
+            cout << " Expiry Date: " << med.getExpiryDate() << endl;
+            cout << "----------------------------------------" << endl;
+            
+            cout << "\nSelect Field to Update:" << endl;
+            cout << "1.  Name" << endl;
+            cout << "2.  Quantity" << endl;
+            cout << "3.  Price" << endl;
+            cout << "4.  Expiry Date" << endl;
+            cout << "5.  Cancel" << endl;
+            
+            int choice;
+            cout << "Enter choice: ";
+            cin >> choice;
+            validChoice(choice);
+            
+            if (choice == 5) {
+                loader("Cancelling update");
+                pauseWithMessage("Press any key to continue...");
+                return;
+            }
+            
+            switch (choice) {
+                case 1: {
+                    string newName;
+                    cout << "Enter New Name: ";
+                    getline(cin, newName);
+                    med.setName(newName);
+                    break;
+                }
+                case 2: {
+                    int newQty;
+                    cout << "Enter New Quantity: ";
+                    cin >> newQty;
+                    cin.ignore();
+                    med.setQuantity(newQty);
+                    break;
+                }
+                case 3: {
+                    double newPrice;
+                    cout << "Enter New Price: ";
+                    cin >> newPrice;
+                    med.setPrice(newPrice);
+                    break;
+                }
+                case 4: {
+                    string newExpiry;
+                    cout << "Enter New Expiry Date (YYYY-MM-DD): ";
+                    cin >> newExpiry;
+                    med.setExpiryDate(newExpiry);
+                    break;
+                }
+                default:
+                    cout << "Invalid choice!" << endl;
+            }
+            
+            if (choice >= 1 && choice <= 4) {
+                saveMedicinesToFile("medicines.csv", medicines);
+                loader("Updating medicine");
+                cout << " Medicine Details Updated Successfully!" << endl;
+            }
+            
+            pauseWithMessage("Press any key to continue...");
+            return;
+        }
+    }
+    
+    if (!found) {
+        cout << " Error: Medicine ID not found!" << endl;
+        pauseWithMessage("Press any key to go back...");
+    }
+}
+
+void removeMedicine(vector<Medicine> &medicines) {
+    system("cls");
+    cout << "----------------------------------------" << endl;
+    cout << "         REMOVE MEDICINE              " << endl;
+    cout << "----------------------------------------" << endl;
+    
+    string id;
+    cout << "Enter Medicine ID to Remove: ";
+    cin >> id;
+    cin.ignore();
+    bool found = false;
+    for (auto it = medicines.begin(); it != medicines.end(); it++) {
+        if (it->getId() == id) {
+            found = true;
+            
+            cout << "Warning: Removing this medicine will delete it from the inventory. Are you sure? (Y/N): ";
+            char confirm;
+            cin >> confirm;
+            
+            if (confirm == 'Y' || confirm == 'y') {
+                medicines.erase(it);
+                saveMedicinesToFile("medicines.csv", medicines);
+                loader("Removing medicine");
+                cout << "Medicine Removed Successfully!" << endl;
+            } else {
+                cout << "Operation cancelled." << endl;
+            }
+            cin.ignore(); // changed
+            pauseWithMessage("Press any key to continue...");
+            return;
+        }
+    }
+    
+    if (!found) {
+        cout << "Error: Medicine ID not found!" << endl;
+        pauseWithMessage("Press any key to go back...");
+    }
+}
+
+void pharmacyManagement(vector<Medicine> &medicines) {
+    int choice = 0;
+    while (choice != 5) {
+        system("cls");
+        cout << "========================================" << endl;
+        cout << "        PHARMACY & INVENTORY        " << endl;
+        cout << "========================================" << endl;
+        cout << "1.  View Medicine Stock" << endl;
+        cout << "2.  Add New Medicine" << endl;
+        cout << "3.  Update Medicine Details" << endl;
+        cout << "4.  Remove Medicine" << endl;
+        cout << "5.  Back to Main Menu" << endl;
+        cout << "Enter your choice: ";
+        cin >> choice;
+        validChoice(choice);
+        
+        switch (choice) {
+            case 1:
+                viewMedicineStock(medicines);
+                break;
+            case 2:
+                addNewMedicine(medicines);
+                break;
+            case 3:
+                updateMedicineDetails(medicines);
+                break;
+            case 4:
+                removeMedicine(medicines);
+                break;
+            case 5:
+                loader("Returning to Main Menu");
+                break;
+            default:
+                cout << "Invalid choice! Try again." << endl;
+                pauseWithMessage("Press Enter to retry");
+        }
+    }
+}
+
 class Staff {
     string id, name, role, shift, salary, joiningDate;
 public:
@@ -1363,8 +2040,8 @@ void staffManagement(vector<Staff> &staffs) {
 void dashboard(vector<User> &users) {
     vector<Patient> patients = loadPatientsFromFile("patients.csv");
     vector<Doctor> doctors = loadDoctorsFromFile("doctors.csv");
-    // vector<Appointment> appointments;
-    // vector<Medicine> medicines;
+    vector<Appointment> appointments = loadAppointmentsFromFile("appointments.csv");
+    vector<Medicine> medicines= loadMedicinesFromFile("medicines.csv");
     vector<Staff> staffs = loadStaffsFromFile("staffs.csv");
 
     int choice;
@@ -1392,12 +2069,10 @@ void dashboard(vector<User> &users) {
                 doctorManagement(doctors);
                 break;
             case 3:
-                cout << "Development in Progress" << endl;
-                // appointmentManagement(appointments, patients, doctors);
+                appointmentManagement(appointments, patients, doctors);
                 break;
             case 4:
-                cout << "Development in Progress" << endl;
-                // pharmacyManagement(medicines);
+                pharmacyManagement(medicines);
                 break;
             case 5:
                 adminManagement(users);
@@ -1414,9 +2089,6 @@ void dashboard(vector<User> &users) {
             default: 
                 cout << "Invalid choice! Try again." << endl;
                 pauseWithMessage("Press Enter to retry");
-        }
-        if (choice != 1 && choice != 2 && choice != 7 && choice != 5 && choice != 6) {
-            getchar();
         }
     }
 }
@@ -1439,7 +2111,7 @@ void initialMenu(vector<User> &users) {
                 registerUser(users);
                 break;
             case 2:
-                if (login(users)) {
+                if (login(users)) { // true / false
                     dashboard(users);
                 }
                 break;
