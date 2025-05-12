@@ -658,7 +658,7 @@ Returning to Main Menu...
 
 
 ========================================
-        👨‍💼 STAFF & ADMIN MANAGEMENT
+        👨‍💼 STAFF MANAGEMENT
 ========================================
 1️⃣  Add New Staff Member
 2️⃣  View Staff Details
